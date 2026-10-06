@@ -1,0 +1,1386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Evaluations — Revision Notes · CampusX Series</title>
+<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Covers Lectures 1–7.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antic+Didone&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+:root{
+  /* notebook paper, ballpoint blue, highlighter yellow */
+  color-scheme:light;
+  --bg:#e8ecef;
+  --surface:#f1f4f6;
+  --card:#fbfcfd;
+  --ink:#2c3440;
+  --ink-strong:#141b26;
+  --muted:#5c6775;
+  --accent:#1f3fd0;
+  --accent-soft:rgba(31,63,208,.08);
+  --accent-line:rgba(31,63,208,.45);
+  --tint:#ffe45c;
+  --numeral:#c5d0f8;
+  --tint-soft:rgba(255,228,92,.45);
+  --hair:rgba(20,27,38,.13);
+  --hair-strong:rgba(20,27,38,.3);
+  --inv-bg:#141b26;
+  --inv-fg:#fbfcfd;
+  --thumb:#b9c1ca;
+  --row-hover:rgba(251,252,253,.7);
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --serif:'Antic Didone',Georgia,serif;
+  --sans:'Instrument Sans',-apple-system,'Segoe UI',sans-serif;
+}
+/* dark palette: follows the system unless the toggle has set data-theme (screen only, so print stays light) */
+@media screen and (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#12161c;--surface:#171c23;--card:#1d232c;
+    --ink:#c5ccd6;--ink-strong:#eef1f5;--muted:#8b96a5;
+    --accent:#8fa6ff;--accent-soft:rgba(143,166,255,.12);--accent-line:rgba(143,166,255,.55);
+    --tint-soft:rgba(255,228,92,.18);--numeral:#ffe45c;
+    --hair:rgba(255,255,255,.1);--hair-strong:rgba(255,255,255,.24);
+    --inv-bg:#283140;--thumb:#3a4452;--row-hover:rgba(255,255,255,.04);
+  }
+}
+@media screen{
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#12161c;--surface:#171c23;--card:#1d232c;
+    --ink:#c5ccd6;--ink-strong:#eef1f5;--muted:#8b96a5;
+    --accent:#8fa6ff;--accent-soft:rgba(143,166,255,.12);--accent-line:rgba(143,166,255,.55);
+    --tint-soft:rgba(255,228,92,.18);--numeral:#ffe45c;
+    --hair:rgba(255,255,255,.1);--hair-strong:rgba(255,255,255,.24);
+    --inv-bg:#283140;--thumb:#3a4452;--row-hover:rgba(255,255,255,.04);
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:32px}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent);color:var(--bg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--thumb);border-radius:6px;border:2px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* ---------- reading progress ---------- */
+.progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--accent);z-index:99}
+
+/* ---------- sidebar ---------- */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:272px;
+  padding:40px 28px 28px 36px;
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--hair);
+  background:var(--surface);
+  z-index:10;
+}
+.brand{margin-bottom:36px}
+.brand .brand-title{font-family:var(--serif);font-size:30px;line-height:1.05;color:var(--ink-strong);letter-spacing:.01em}
+.brand .brand-meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+.toc-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--hair);margin-bottom:6px}
+.toc{list-style:none;overflow-y:auto;flex:1;padding-right:4px}
+.toc li{margin:2px 0}
+.toc a{
+  display:flex;gap:12px;align-items:baseline;
+  padding:7px 10px;border-radius:8px;
+  color:var(--ink);text-decoration:none;
+  font-size:13.5px;line-height:1.35;
+  transition:background .18s ease,color .18s ease;
+}
+.toc a:hover{background:var(--card)}
+.toc a.active{background:var(--card);color:var(--accent)}
+.toc a.active .toc-num{color:var(--accent)}
+.toc-num{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none}
+.sidebar-foot{margin-top:20px;padding-top:16px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--muted);letter-spacing:.04em}
+.sidebar-foot b{color:var(--accent);font-weight:600}
+.theme-toggle{
+  display:block;margin-top:14px;font:inherit;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-strong);background:var(--card);border:1px solid var(--hair-strong);border-radius:999px;
+  padding:6px 14px;cursor:pointer;
+}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ---------- main ---------- */
+main{margin-left:272px}
+.wrap{max-width:760px;margin:0 auto;padding:0 48px 140px}
+
+/* ---------- masthead ---------- */
+.masthead{padding:88px 0 64px;border-bottom:1px solid var(--hair-strong)}
+.masthead h1{
+  font-family:var(--serif);font-weight:400;
+  font-size:clamp(52px,7.5vw,84px);
+  line-height:1.02;letter-spacing:-.01em;color:var(--ink-strong);
+}
+.masthead .lede{margin-top:26px;font-size:18px;line-height:1.7;max-width:56ch;color:var(--ink)}
+.mast-meta{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--hair);
+  border:1px solid var(--hair);border-radius:12px;overflow:hidden;margin-top:40px;
+}
+.mast-meta div{background:var(--card);padding:16px 18px}
+.mast-meta .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.mast-meta .v{font-size:14px;line-height:1.5;color:var(--ink-strong);font-weight:500}
+
+.banner{
+  margin-top:28px;background:var(--tint-soft);border-radius:12px;
+  padding:18px 22px;display:flex;gap:16px;align-items:flex-start;
+}
+.banner .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;flex:none;padding-top:3px}
+.banner p{font-size:14px;line-height:1.65;color:var(--ink-strong)}
+
+.mobile-toc{display:none}
+
+/* ---------- chapters ---------- */
+.chapter{padding-top:96px;border-top:1px solid var(--hair);margin-top:80px}
+.chapter:first-of-type{border-top:none;margin-top:0;padding-top:72px}
+.ch-head{margin-bottom:44px}
+.ch-num{
+  font-family:var(--serif);font-size:110px;line-height:.9;color:var(--numeral);
+  -webkit-text-stroke:1px var(--accent-line);
+  margin-bottom:10px;
+}
+.ch-kick{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.ch-kick b{color:var(--accent);font-weight:600}
+.ch-head h2{font-family:var(--serif);font-weight:400;font-size:clamp(32px,4.5vw,44px);line-height:1.12;color:var(--ink-strong);letter-spacing:.005em;max-width:20ch}
+.ch-head .ch-lede{margin-top:16px;font-size:17px;line-height:1.7;color:var(--ink);max-width:58ch}
+
+h3{
+  font-family:var(--sans);font-weight:600;font-size:19px;line-height:1.35;color:var(--ink-strong);
+  margin:48px 0 14px;letter-spacing:.005em;
+}
+h3 .h3-num{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500;margin-right:10px;letter-spacing:.05em;text-decoration:none}
+h3 .h3-num:hover{text-decoration:underline;text-underline-offset:3px}
+p{margin:0 0 16px}
+p + p{margin-top:-4px}
+ul,ol{margin:0 0 18px 22px}
+li{margin-bottom:7px}
+li::marker{color:var(--accent)}
+b,strong{color:var(--ink-strong);font-weight:600}
+mark{background:var(--tint-soft);color:var(--ink-strong);padding:.05em .22em;border-radius:3px}
+.mono{font-family:var(--mono);font-size:.86em}
+a.inline{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--tint)}
+.small{font-size:13.5px;color:var(--muted)}
+
+/* ---------- callouts ---------- */
+.callout{
+  background:var(--card);border-radius:12px;padding:22px 26px;margin:28px 0;
+}
+.callout .callout-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:10px}
+.callout p:last-child{margin-bottom:0}
+.callout.def p{font-family:var(--serif);font-size:20px;line-height:1.55;color:var(--ink-strong)}
+.callout .def-breakdown{list-style:none;margin:14px 0 0}
+.callout .def-breakdown li{font-size:14px;margin-bottom:6px}
+.callout.warn{background:var(--tint-soft)}
+.callout.warn .callout-label{color:var(--accent)}
+
+/* ---------- case study cards ---------- */
+.case{background:var(--card);border-radius:12px;padding:22px 26px;margin:18px 0}
+.case .case-tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.case .case-tag b{color:var(--accent);font-weight:600}
+.case h4{font-size:16.5px;font-weight:600;color:var(--ink-strong);margin-bottom:8px}
+.case p{font-size:14.5px;margin-bottom:10px}
+.case .case-out{font-size:13.5px;color:var(--ink-strong);background:var(--surface);border-radius:8px;padding:10px 14px;margin-top:6px}
+.case .case-out b{color:var(--accent)}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;margin:26px 0 30px;font-size:14px;background:transparent}
+caption{caption-side:top;text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding-bottom:10px}
+thead th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;text-align:left;
+  padding:10px 14px 10px 0;border-bottom:1px solid var(--hair-strong);
+}
+tbody td{padding:12px 14px 12px 0;border-bottom:1px solid var(--hair);vertical-align:top;line-height:1.6}
+tbody tr:last-child td{border-bottom:none}
+tbody td:first-child{font-weight:500;color:var(--ink-strong)}
+table tbody tr{transition:background .15s}
+table tbody tr:hover{background:var(--row-hover)}
+.tbl-wrap{overflow-x:auto}
+
+/* ---------- chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 20px}
+.chip{
+  font-family:var(--mono);font-size:11.5px;color:var(--ink);
+  border:1px solid var(--hair-strong);border-radius:999px;padding:4px 13px;
+  background:var(--card);white-space:nowrap;
+}
+.chip.hot{border-color:var(--accent);color:var(--accent)}
+
+/* ---------- numbered steps ---------- */
+.steps{list-style:none;margin:24px 0;counter-reset:step}
+.steps li{
+  counter-increment:step;position:relative;
+  padding:0 0 26px 64px;margin:0;
+}
+.steps li::before{
+  content:counter(step,decimal-leading-zero);
+  position:absolute;left:0;top:-4px;
+  font-family:var(--serif);font-size:34px;color:var(--numeral);
+  -webkit-text-stroke:.8px var(--accent-line);line-height:1;
+}
+.steps li::after{content:'';position:absolute;left:17px;top:34px;bottom:4px;width:1px;background:var(--hair-strong)}
+.steps li:last-child::after{display:none}
+.steps b{display:block;font-size:15.5px;margin-bottom:3px}
+.steps span{font-size:14.5px;color:var(--ink)}
+
+/* ---------- grids ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:24px 0}
+.tile{background:var(--card);border-radius:12px;padding:20px 22px}
+.tile .tile-k{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:8px}
+.tile h4{font-size:15.5px;font-weight:600;color:var(--ink-strong);margin-bottom:6px}
+.tile p{font-size:13.5px;margin-bottom:8px;line-height:1.6}
+.tile ul{margin:0 0 0 16px;font-size:13px}
+.tile .bench{font-family:var(--mono);font-size:11px;color:var(--muted);border-top:1px solid var(--hair);padding-top:8px;margin-top:10px}
+.tile .bench b{color:var(--ink-strong);font-weight:500}
+
+/* ---------- figures / diagrams ---------- */
+figure.diagram{
+  background:var(--card);border-radius:14px;padding:30px 26px 22px;margin:32px 0;
+  overflow-x:auto;
+}
+figure.diagram svg{display:block;margin:0 auto;max-width:100%;min-width:560px;height:auto}
+figcaption{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);margin-top:16px;text-align:center;line-height:1.6}
+figcaption b{color:var(--accent);font-weight:600}
+svg text{font-family:var(--mono);fill:var(--ink)}
+svg .lbl{font-size:11px;letter-spacing:.08em}
+svg .tiny{font-size:9.5px;fill:var(--muted);letter-spacing:.06em}
+svg .ttl{font-size:11.5px;font-weight:600;fill:var(--ink-strong);letter-spacing:.06em}
+svg .box{fill:var(--surface);stroke:var(--hair-strong);rx:8}
+svg .boxc{fill:var(--card);stroke:var(--hair-strong)}
+svg .hot{stroke:var(--accent)}
+svg .hotfill{fill:var(--accent-soft);stroke:var(--accent)}
+svg .tinted{fill:var(--tint-soft);stroke:var(--accent-line)}
+svg .acc{fill:var(--accent)}
+svg .mut{fill:var(--muted)}
+svg .ln{stroke:var(--hair-strong);fill:none}
+svg .lnacc{stroke:var(--accent);fill:none}
+
+/* ---------- takeaway ---------- */
+.takeaway{
+  margin:44px 0 8px;padding:24px 28px;border-radius:12px;
+  background:var(--inv-bg);color:var(--inv-fg);
+}
+.takeaway .tk-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--tint);margin-bottom:10px;font-weight:600}
+.takeaway p{font-family:var(--serif);font-size:19px;line-height:1.55;color:var(--inv-fg);margin:0}
+
+/* ---------- footer ---------- */
+.colophon{border-top:1px solid var(--hair-strong);margin-top:100px;padding:56px 0 20px;text-align:center}
+.colophon .fin{font-family:var(--serif);font-size:40px;color:var(--ink-strong)}
+.colophon .fin i{font-style:normal;color:var(--accent)}
+.colophon p{font-size:13px;color:var(--muted);margin-top:12px}
+
+/* ---------- masthead entrance ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(22px)}}
+.masthead{animation:rise .7s cubic-bezier(.2,.6,.2,1)}
+
+/* ---------- contents drawer (narrow screens) ---------- */
+.nav-toggle,.scrim{display:none}
+
+
+/* ---------- responsive ---------- */
+@media (max-width:1100px){
+  .sidebar{
+    width:min(300px,86vw);z-index:60;
+    transform:translateX(-100%);visibility:hidden;
+    transition:transform .25s ease,visibility .25s;
+  }
+  .sidebar.open{transform:none;visibility:visible}
+  .scrim.open{display:block;position:fixed;inset:0;background:rgba(51,46,38,.4);z-index:55}
+  .nav-toggle{
+    display:block;position:fixed;right:16px;bottom:16px;z-index:50;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+    color:var(--inv-fg);background:var(--inv-bg);border:0;border-radius:999px;
+    padding:12px 18px;cursor:pointer;box-shadow:0 4px 14px rgba(51,46,38,.25);
+  }
+  main{margin-left:0}
+  .wrap{padding:0 24px 120px}
+  .mobile-toc{display:block;margin-top:36px;background:var(--card);border-radius:12px;padding:6px 18px}
+  .mobile-toc summary{cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding:12px 0;font-weight:600;list-style:none}
+  .mobile-toc summary::before{content:'▸ ';}
+  .mobile-toc[open] summary::before{content:'▾ ';}
+  .mobile-toc ol{margin:0 0 14px 4px;font-size:14px}
+  .mobile-toc a{color:var(--ink);text-decoration:none}
+  .mobile-toc a:hover{color:var(--accent)}
+  .grid3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:640px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .mast-meta{grid-template-columns:1fr}
+  .ch-num{font-size:84px}
+  .masthead{padding:56px 0 48px}
+}
+
+@media (prefers-reduced-motion:reduce){.masthead{animation:none}.sidebar{transition:none}html{scroll-behavior:auto}}
+
+/* ---------- print ---------- */
+@media print{
+  .sidebar,.progress,.mobile-toc,.nav-toggle,.scrim{display:none}
+  main{margin:0}
+  body{background:#fff}
+  .wrap{max-width:100%;padding:0 12mm}
+  .chapter{page-break-before:always;border:none}
+  .masthead{animation:none}
+  figure.diagram svg{min-width:0}
+  figure.diagram,.callout,.case,.takeaway{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<button class="nav-toggle" id="navToggle" type="button" aria-controls="sidebar" aria-expanded="false">Contents</button>
+<div class="scrim" id="scrim"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-title">LLM<br>Evaluations</div>
+    <div class="brand-meta">Revision Notes · Nº 01</div>
+  </div>
+  <div class="toc-label">Contents</div>
+  <ol class="toc" id="toc">
+    <li><a href="#ch1"><span class="toc-num">01</span>Why LLM Evals</a></li>
+    <li><a href="#ch2"><span class="toc-num">02</span>What Is an Eval — Model vs Application</a></li>
+    <li><a href="#ch3"><span class="toc-num">03</span>The Evaluation Workflow</a></li>
+    <li><a href="#ch4"><span class="toc-num">04</span>Why One Pipeline Is Not Enough</a></li>
+    <li><a href="#ch5"><span class="toc-num">05</span>Eval Methods &amp; LLM-as-a-Judge</a></li>
+    <li><a href="#ch6"><span class="toc-num">06</span>Offline vs Online Evals</a></li>
+    <li><a href="#ch7"><span class="toc-num">07</span>Model Evals &amp; the 8 Capabilities</a></li>
+  </ol>
+  <div class="sidebar-foot">
+    Series in progress —<br>
+    <b>7</b> chapters covered so far.<br>
+    New lectures → new chapters.
+    <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
+  </div>
+</aside>
+
+<main>
+<div class="wrap">
+
+<header class="masthead">
+  <h1>LLM<br>Evaluations</h1>
+  <p class="lede">Everything the series has taught so far about testing large language models and the applications built on top of them — distilled into one reference, organised lecture by lecture, for fast revision.</p>
+  <div class="mast-meta">
+    <div><div class="k">Source</div><div class="v">CampusX · “LLM Evals” playlist (Hindi)</div></div>
+    <div><div class="k">Coverage</div><div class="v">Lectures 1–7 · concepts, workflows &amp; case studies</div></div>
+    <div><div class="k">Format</div><div class="v">Definitions · diagrams · tables · worked numbers</div></div>
+  </div>
+  <div class="banner">
+    <span class="tag">Status</span>
+    <p>The lecture series is still in progress. These notes cover the seven videos completed so far — append a new chapter each time you finish the next video.</p>
+  </div>
+  <details class="mobile-toc">
+    <summary>Contents</summary>
+    <ol>
+      <li><a href="#ch1">01 · Why LLM Evals</a></li>
+      <li><a href="#ch2">02 · What Is an Eval — Model vs Application</a></li>
+      <li><a href="#ch3">03 · The Evaluation Workflow</a></li>
+      <li><a href="#ch4">04 · Why One Pipeline Is Not Enough</a></li>
+      <li><a href="#ch5">05 · Eval Methods &amp; LLM-as-a-Judge</a></li>
+      <li><a href="#ch6">06 · Offline vs Online Evals</a></li>
+      <li><a href="#ch7">07 · Model Evals &amp; the 8 Capabilities</a></li>
+    </ol>
+  </details>
+</header>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 01                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch1">
+  <header class="ch-head">
+    <div class="ch-num">01</div>
+    <div class="ch-kick"><b>Motivation</b></div>
+    <h2>Why LLM Evals</h2>
+    <p class="ch-lede">Why “it seems to work” is not good enough — and what actually breaks when AI ships untested.</p>
+  </header>
+
+  <h3 id="s1-1"><a class="h3-num" href="#s1-1">1.1</a>The AI engineer’s job</h3>
+  <p>An <b>AI engineer</b> builds applications <em>on top of</em> large language models — chatbots, RAG systems, agents, classifiers. The moment such an application ships, it speaks, promises and decides <b>on your behalf</b>. Testing it is not a luxury; it is the job.</p>
+
+  <h3 id="s1-2"><a class="h3-num" href="#s1-2">1.2</a>Vibe testing — the trap everyone starts in</h3>
+  <p><b>Vibe testing</b> is trying a handful of prompts, eyeballing the answers, and concluding “looks good”. It feels productive but proves almost nothing:</p>
+  <ul>
+    <li>The sample is tiny — a few hand-picked prompts out of infinite possible inputs.</li>
+    <li>There are <b>no written criteria</b>, so “good” is whatever felt good that day.</li>
+    <li>It is <b>not repeatable</b> — re-run tomorrow and you may judge differently.</li>
+    <li>Memory is biased — you remember the impressive answers and forget the failures.</li>
+  </ul>
+
+  <h3 id="s1-3"><a class="h3-num" href="#s1-3">1.3</a>Why LLMs are harder to test than normal software</h3>
+  <p>Traditional software is <b>deterministic</b>: the same input always produces the same output, so a handful of unit tests can pin down behaviour. LLM applications are different on both axes that matter:</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Traditional software testing versus LLM testing">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+        <marker id="a1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="acc"/>
+        </marker>
+      </defs>
+      <!-- Left: traditional -->
+      <text x="175" y="28" text-anchor="middle" class="ttl">TRADITIONAL SOFTWARE</text>
+      <text x="175" y="44" text-anchor="middle" class="tiny">deterministic</text>
+      <rect x="20" y="70" width="120" height="46" rx="8" class="box"/>
+      <text x="80" y="97" text-anchor="middle" class="lbl">INPUT</text>
+      <line x1="140" y1="93" x2="178" y2="93" class="ln" stroke-width="1.5" marker-end="url(#a1)"/>
+      <rect x="184" y="70" width="120" height="46" rx="8" class="box"/>
+      <text x="244" y="97" text-anchor="middle" class="lbl">CODE</text>
+      <line x1="304" y1="93" x2="342" y2="93" class="ln" stroke-width="1.5" marker-end="url(#a1)"/>
+      <rect x="348" y="70" width="120" height="46" rx="8" class="box"/>
+      <text x="408" y="97" text-anchor="middle" class="lbl">OUTPUT</text>
+      <text x="244" y="150" text-anchor="middle" class="tiny">same input → same output, every time</text>
+      <rect x="84" y="176" width="320" height="52" rx="8" class="boxc"/>
+      <text x="244" y="197" text-anchor="middle" class="lbl">A FEW UNIT TESTS</text>
+      <text x="244" y="214" text-anchor="middle" class="tiny">can pin the behaviour down</text>
+      <!-- divider -->
+      <line x1="490" y1="30" x2="490" y2="260" class="ln" stroke-dasharray="3 5"/>
+      <!-- Right: LLM -->
+      <text x="600" y="28" text-anchor="middle" class="ttl">LLM APPLICATION</text>
+      <text x="600" y="44" text-anchor="middle" class="tiny">probabilistic · multi-dimensional</text>
+      <rect x="508" y="70" width="90" height="46" rx="8" class="box"/>
+      <text x="553" y="97" text-anchor="middle" class="lbl">INPUT</text>
+      <line x1="598" y1="93" x2="624" y2="93" class="lnacc" stroke-width="1.5" marker-end="url(#a1b)"/>
+      <rect x="630" y="70" width="80" height="46" rx="8" class="hotfill"/>
+      <text x="670" y="97" text-anchor="middle" class="lbl acc">LLM</text>
+      <!-- fan out -->
+      <path d="M660 116 C 640 150, 538 140, 538 166" class="lnacc" stroke-width="1.5" marker-end="url(#a1b)"/>
+      <path d="M668 116 L 612 164" class="lnacc" stroke-width="1.5" marker-end="url(#a1b)"/>
+      <path d="M676 116 C 696 150, 686 140, 686 166" class="ln" stroke-width="1.5" marker-end="url(#a1)"/>
+      <rect x="504" y="170" width="68" height="34" rx="8" class="boxc hot"/>
+      <text x="538" y="191" text-anchor="middle" class="tiny acc">output A</text>
+      <rect x="578" y="170" width="68" height="34" rx="8" class="boxc"/>
+      <text x="612" y="191" text-anchor="middle" class="tiny">output B</text>
+      <rect x="652" y="170" width="68" height="34" rx="8" class="boxc"/>
+      <text x="686" y="191" text-anchor="middle" class="tiny">output C</text>
+      <text x="610" y="240" text-anchor="middle" class="tiny">quality = f(correctness, relevance,</text>
+      <text x="610" y="254" text-anchor="middle" class="tiny">tone, safety, …) — no single “pass”</text>
+    </svg>
+    <figcaption><b>Fig 1.1</b> — Two reasons LLM testing is its own discipline: outputs are a distribution, and quality has many dimensions.</figcaption>
+  </figure>
+
+  <p>So an LLM app can pass every test you wrote and still embarrass you on the one input you never imagined. That is why evaluation needs to be <mark>systematic, repeatable and criteria-driven</mark> — the subject of the whole series.</p>
+
+  <h3 id="s1-4"><a class="h3-num" href="#s1-4">1.4</a>When untested AI ships — three cautionary tales</h3>
+
+  <div class="case">
+    <div class="case-tag"><b>Case study</b> · Air Canada, 2024</div>
+    <h4>The chatbot that invented a refund policy</h4>
+    <p>A customer asked Air Canada’s support chatbot about bereavement fares. The bot confidently described a retroactive refund policy <b>that did not exist</b> — and even linked to a page that contradicted it.</p>
+    <div class="case-out"><b>Outcome:</b> the tribunal ruled the airline responsible for what its chatbot says. Air Canada had to honour the invented refund. Your chatbot’s words are your words.</div>
+  </div>
+
+  <div class="case">
+    <div class="case-tag"><b>Case study</b> · Chevrolet dealership</div>
+    <h4>A brand-new car for one dollar</h4>
+    <p>A dealership deployed a chatbot on its website. Users jailbroke it with prompt tricks until it agreed — in writing — to sell a car for <b>$1</b>, “no takesies backsies”.</p>
+    <div class="case-out"><b>Outcome:</b> viral embarrassment; the bot was pulled. Safety and injection-resistance evals exist precisely for this.</div>
+  </div>
+
+  <div class="case">
+    <div class="case-tag"><b>Case study</b> · Mata v. Avianca</div>
+    <h4>The lawyer who cited fake cases</h4>
+    <p>A lawyer used ChatGPT for legal research and filed a brief citing precedents the model had <b>hallucinated</b> — none of the cases existed.</p>
+    <div class="case-out"><b>Outcome:</b> a <b>$5,000 fine</b> and a public lesson: model outputs need verification loops wherever stakes are real.</div>
+  </div>
+
+  <h3 id="s1-5"><a class="h3-num" href="#s1-5">1.5</a>What this series covers</h3>
+  <p>The playlist builds the discipline piece by piece. Roughly ten topics are planned; these notes track them chapter by chapter:</p>
+  <div class="chips">
+    <span class="chip">What an eval is</span>
+    <span class="chip">Eval workflow</span>
+    <span class="chip">Multiple pipelines</span>
+    <span class="chip">Eval methods</span>
+    <span class="chip">LLM-as-a-Judge</span>
+    <span class="chip">Offline vs online</span>
+    <span class="chip">Model evals</span>
+    <span class="chip hot">…more to come</span>
+  </div>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>An AI application can make promises, quotes and claims on your behalf. Evals are how you find out what it will say — before a judge, a customer, or the front page does.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 02                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch2">
+  <header class="ch-head">
+    <div class="ch-num">02</div>
+    <div class="ch-kick"><b>Foundations</b></div>
+    <h2>What Is an Eval — Model vs Application</h2>
+    <p class="ch-lede">The vocabulary of the whole series: what an evaluation actually is, and the two very different things it can target.</p>
+  </header>
+
+  <h3 id="s2-1"><a class="h3-num" href="#s2-1">2.1</a>The definition worth memorising</h3>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Evaluation</div>
+    <p>An eval is a <b>systematic, repeatable test</b> of a model or an LLM application, run against <b>clearly defined criteria</b>, producing scores you can compare and act on.</p>
+    <ul class="def-breakdown">
+      <li><b>Systematic</b> — a defined procedure, not ad-hoc prompting.</li>
+      <li><b>Repeatable</b> — re-run it tomorrow, get comparable results.</li>
+      <li><b>Clear criteria</b> — you know exactly what is being measured.</li>
+    </ul>
+  </aside>
+
+  <h3 id="s2-2"><a class="h3-num" href="#s2-2">2.2</a>An eval is not a metric</h3>
+  <p>A <b>metric</b> is just the number. The <b>eval</b> is the entire setup that produces it — the dataset, the prompts, the protocol, the scoring, and the interpretation. Two runs reporting “85% accuracy” on different datasets are <b>not comparable</b>. When someone quotes a number, the first question is always: <mark>which eval produced it?</mark></p>
+
+  <h3 id="s2-3"><a class="h3-num" href="#s2-3">2.3</a>Two targets: the model, or the application</h3>
+  <p><b>Model evals</b> judge the LLM itself — its general capabilities, measured mostly through public benchmarks (MMLU, GSM8K, SWE-bench…). Labs run them; engineers <em>consume</em> them to pick and compare models. <b>Application evals</b> judge <em>your whole system</em> — with your data, your users, your criteria. Nobody can run those for you.</p>
+  <p>The smartphone analogy: the model is the <b>processor</b>, your application is the <b>phone</b>. Benchmark scores tell you about the chip — nothing about battery life, the camera, or whether the phone survives your users.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 330" role="img" aria-label="Model evals versus application evals">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+      </defs>
+      <!-- Left lane -->
+      <rect x="16" y="24" width="250" height="282" rx="14" class="box"/>
+      <text x="141" y="54" text-anchor="middle" class="ttl">MODEL EVALS</text>
+      <text x="141" y="70" text-anchor="middle" class="tiny">“how good is the chip?”</text>
+      <rect x="76" y="92" width="130" height="54" rx="10" class="hotfill"/>
+      <text x="141" y="115" text-anchor="middle" class="lbl acc">THE LLM</text>
+      <text x="141" y="131" text-anchor="middle" class="tiny">the core model</text>
+      <text x="141" y="176" text-anchor="middle" class="tiny">measured with public benchmarks</text>
+      <rect x="46" y="192" width="190" height="30" rx="8" class="boxc"/>
+      <text x="141" y="211" text-anchor="middle" class="tiny">MMLU · GSM8K · SWE-bench</text>
+      <rect x="46" y="230" width="190" height="30" rx="8" class="boxc"/>
+      <text x="141" y="249" text-anchor="middle" class="tiny">IFEval · MMMU · Needle…</text>
+      <text x="141" y="290" text-anchor="middle" class="tiny">run by labs · consumed by engineers</text>
+      <!-- Right lane -->
+      <rect x="306" y="24" width="398" height="282" rx="14" class="boxc"/>
+      <text x="505" y="54" text-anchor="middle" class="ttl">APPLICATION EVALS</text>
+      <text x="505" y="70" text-anchor="middle" class="tiny">“how good is the whole phone?”</text>
+      <!-- app stack -->
+      <rect x="336" y="90" width="338" height="40" rx="8" class="box"/>
+      <text x="505" y="114" text-anchor="middle" class="lbl">PROMPTS &amp; INSTRUCTIONS</text>
+      <rect x="336" y="138" width="163" height="40" rx="8" class="box"/>
+      <text x="417" y="162" text-anchor="middle" class="lbl">RETRIEVAL (RAG)</text>
+      <rect x="511" y="138" width="163" height="40" rx="8" class="box"/>
+      <text x="592" y="162" text-anchor="middle" class="lbl">TOOLS &amp; AGENTS</text>
+      <rect x="336" y="186" width="338" height="44" rx="8" class="hotfill"/>
+      <text x="505" y="212" text-anchor="middle" class="lbl acc">THE MODEL — one component among many</text>
+      <rect x="336" y="238" width="338" height="40" rx="8" class="box"/>
+      <text x="505" y="262" text-anchor="middle" class="lbl">GUARDRAILS · ORCHESTRATION · MEMORY</text>
+      <text x="505" y="298" text-anchor="middle" class="tiny">tested with your data + your criteria — nobody can do it for you</text>
+    </svg>
+    <figcaption><b>Fig 2.1</b> — Benchmarks score the chip. Application evals test the entire phone: prompts, retrieval, tools, guardrails and the model together.</figcaption>
+  </figure>
+
+  <h3 id="s2-4"><a class="h3-num" href="#s2-4">2.4</a>The parts of an LLM app that are not the model</h3>
+  <div class="grid2">
+    <div class="tile"><div class="tile-k">Input side</div><h4>Prompts &amp; retrieval</h4><p>System prompts, few-shot examples, RAG pipelines, re-rankers — everything that shapes what the model sees.</p></div>
+    <div class="tile"><div class="tile-k">Output side</div><h4>Tools &amp; guardrails</h4><p>Function calling, agent loops, output filters, PII masking — everything that shapes what the user gets.</p></div>
+  </div>
+  <p>A weak link anywhere in that chain fails the app even with a frontier model inside — which is why <b>application evals are unavoidable</b> for anyone shipping real products.</p>
+
+  <h3 id="s2-5"><a class="h3-num" href="#s2-5">2.5</a>The eight capability axes (preview)</h3>
+  <p>Model evals cluster around eight capabilities — Chapter 07 takes each one apart. For now, know the map:</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Capability → example benchmark</caption>
+    <thead><tr><th>Capability</th><th>Example benchmark</th><th>What it probes</th></tr></thead>
+    <tbody>
+      <tr><td>Knowledge &amp; reasoning</td><td class="mono">MMLU</td><td>57-subject general knowledge</td></tr>
+      <tr><td>Coding &amp; software eng.</td><td class="mono">HumanEval · SWE-bench</td><td>Writing code; fixing real GitHub issues</td></tr>
+      <tr><td>Mathematics</td><td class="mono">GSM8K</td><td>Multi-step word problems</td></tr>
+      <tr><td>Long context</td><td class="mono">Needle-in-a-Haystack</td><td>Finding one fact in a huge document</td></tr>
+      <tr><td>Vision &amp; multimodal</td><td class="mono">MMMU</td><td>College-level text + image questions</td></tr>
+      <tr><td>Agentic &amp; tool use</td><td class="mono">tool-calling suites</td><td>Right tool, right parameters, right order</td></tr>
+      <tr><td>Safety &amp; alignment</td><td class="mono">truthfulness / cyber suites</td><td>Refusals, sycophancy, dangerous knowledge</td></tr>
+      <tr><td>Instruction following</td><td class="mono">IFEval</td><td>Verifiable constraints (“3 bullets, ≤100 words”)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Never confuse the two questions. “Is this a good model?” is answered by benchmarks. “Is my application good?” is answered only by evals you build yourself.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 03                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch3">
+  <header class="ch-head">
+    <div class="ch-num">03</div>
+    <div class="ch-kick"><b>Process</b></div>
+    <h2>The Evaluation Workflow, End to End</h2>
+    <p class="ch-lede">The complete offline eval loop, walked through on a real-feeling example: routing Zomato’s support inbox.</p>
+  </header>
+
+  <h3 id="s3-1"><a class="h3-num" href="#s3-1">3.1</a>The worked example</h3>
+  <p>Zomato receives thousands of support emails a day. The application reads each email and <b>routes it to the right team</b> — refunds, delivery issues, restaurant partners, and so on. Simple enough to build in an afternoon; the interesting question is how you <em>prove</em> it works.</p>
+
+  <h3 id="s3-2"><a class="h3-num" href="#s3-2">3.2</a>The workflow, step by step</h3>
+  <ol class="steps">
+    <li><b>Define the task.</b> <span>One sentence, measurable: “route every support email to the correct team.” If you cannot state the task, you cannot test it.</span></li>
+    <li><b>Set success criteria — before building.</b> <span>Numbers, not vibes: target accuracy, a latency ceiling, a cost ceiling. Criteria written afterwards tend to fit whatever you built.</span></li>
+    <li><b>Build a golden dataset.</b> <span><mark>50–500 real examples</mark>, each labelled by hand with the correct outcome. Quality over quantity — and deliberately include the weird, ambiguous cases.</span></li>
+    <li><b>Choose the eval method.</b> <span>Routing is checkable, so plain programmatic accuracy works. Fuzzy outputs (summaries, replies) need human or LLM-judge methods — Chapter 05.</span></li>
+    <li><b>Run the app over the dataset.</b> <span>Same code, same prompts, every example. Log each output.</span></li>
+    <li><b>Score the outputs.</b> <span>Compare predictions against the gold labels; compute the metric.</span></li>
+    <li><b>Analyse the failures.</b> <span>Bucket them. Patterns appear: emails mixing a refund <em>and</em> a delivery complaint, very short emails, Hinglish emails…</span></li>
+    <li><b>Improve one thing.</b> <span>Prompt, model, or pipeline — change one variable so the next measurement means something.</span></li>
+    <li><b>Re-run and iterate.</b> <span>The eval is a loop, not a gate. Every change gets re-measured against the same golden set.</span></li>
+    <li><b>Deploy, then monitor.</b> <span>Production feeds real failures back into the golden dataset — the loop never stops (Chapter 06).</span></li>
+  </ol>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 300" role="img" aria-label="The evaluation workflow loop">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+        <marker id="a3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="acc"/>
+        </marker>
+      </defs>
+      <!-- row 1: steps 1-5 -->
+      <g>
+        <rect x="10" y="30" width="124" height="58" rx="9" class="box"/>
+        <text x="72" y="54" text-anchor="middle" class="lbl">DEFINE TASK</text>
+        <text x="72" y="71" text-anchor="middle" class="tiny">+ success criteria</text>
+        <rect x="154" y="30" width="124" height="58" rx="9" class="tinted"/>
+        <text x="216" y="54" text-anchor="middle" class="lbl">GOLDEN</text>
+        <text x="216" y="71" text-anchor="middle" class="tiny">dataset · 50–500 rows</text>
+        <rect x="298" y="30" width="124" height="58" rx="9" class="box"/>
+        <text x="360" y="54" text-anchor="middle" class="lbl">EVAL METHOD</text>
+        <text x="360" y="71" text-anchor="middle" class="tiny">+ metric</text>
+        <rect x="442" y="30" width="124" height="58" rx="9" class="box"/>
+        <text x="504" y="54" text-anchor="middle" class="lbl">RUN APP</text>
+        <text x="504" y="71" text-anchor="middle" class="tiny">on every row</text>
+        <rect x="586" y="30" width="124" height="58" rx="9" class="box"/>
+        <text x="648" y="54" text-anchor="middle" class="lbl">SCORE</text>
+        <text x="648" y="71" text-anchor="middle" class="tiny">vs gold labels</text>
+      </g>
+      <line x1="134" y1="59" x2="148" y2="59" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="278" y1="59" x2="292" y2="59" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="422" y1="59" x2="436" y2="59" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="566" y1="59" x2="580" y2="59" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <!-- connector down -->
+      <path d="M648 88 L648 122" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <!-- row 2: steps 6-9 reversed -->
+      <g>
+        <rect x="586" y="126" width="124" height="58" rx="9" class="box"/>
+        <text x="648" y="150" text-anchor="middle" class="lbl">ANALYSE</text>
+        <text x="648" y="167" text-anchor="middle" class="tiny">bucket failures</text>
+        <rect x="442" y="126" width="124" height="58" rx="9" class="box"/>
+        <text x="504" y="150" text-anchor="middle" class="lbl">IMPROVE</text>
+        <text x="504" y="167" text-anchor="middle" class="tiny">prompt · model · pipeline</text>
+        <rect x="298" y="126" width="124" height="58" rx="9" class="box"/>
+        <text x="360" y="150" text-anchor="middle" class="lbl">RE-RUN</text>
+        <text x="360" y="167" text-anchor="middle" class="tiny">same golden set</text>
+        <rect x="154" y="126" width="124" height="58" rx="9" class="box"/>
+        <text x="216" y="150" text-anchor="middle" class="lbl">DEPLOY</text>
+        <text x="216" y="167" text-anchor="middle" class="tiny">ship the version</text>
+        <rect x="10" y="126" width="124" height="58" rx="9" class="hotfill"/>
+        <text x="72" y="150" text-anchor="middle" class="lbl acc">MONITOR</text>
+        <text x="72" y="167" text-anchor="middle" class="tiny">production traffic</text>
+      </g>
+      <line x1="586" y1="155" x2="572" y2="155" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="442" y1="155" x2="428" y2="155" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="298" y1="155" x2="284" y2="155" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <line x1="154" y1="155" x2="140" y2="155" class="ln" stroke-width="1.5" marker-end="url(#a3)"/>
+      <!-- feedback loop -->
+      <path d="M72 126 C 72 100, 72 100, 72 92" class="lnacc" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#a3b)"/>
+      <path d="M60 184 C -20 230, 40 268, 200 268 L 660 268 C 700 268, 712 240, 712 190" class="lnacc" stroke-width="1.5" stroke-dasharray="4 4" fill="none" marker-end="url(#a3b)"/>
+      <text x="400" y="260" text-anchor="middle" class="lbl acc">production failures feed back into the golden dataset</text>
+    </svg>
+    <figcaption><b>Fig 3.1</b> — The offline eval loop. Monitoring is not the end: every production failure becomes tomorrow’s test case.</figcaption>
+  </figure>
+
+  <h3 id="s3-3"><a class="h3-num" href="#s3-3">3.3</a>One application → many evals</h3>
+  <p>A single app hides several independent questions, each deserving its own eval:</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Zomato email router — eval inventory</caption>
+    <thead><tr><th>Eval question</th><th>Method</th><th>Example target</th></tr></thead>
+    <tbody>
+      <tr><td>Does it route to the right team?</td><td>Programmatic · accuracy on golden set</td><td class="mono">≥ 92%</td></tr>
+      <tr><td>Are auto-replies polite and on-brand?</td><td>Human rubric / LLM judge</td><td class="mono">tone ≥ 4 / 5</td></tr>
+      <tr><td>Does it leak customer PII?</td><td>Programmatic PII checks + red teaming</td><td class="mono">0 leaks</td></tr>
+      <tr><td>Is it fast and cheap enough?</td><td>Operational metrics</td><td class="mono">&lt; 2 s · &lt; $x / 1k</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <aside class="callout">
+    <div class="callout-label">Rules of thumb</div>
+    <ul>
+      <li><b>Golden dataset size:</b> start with 50–500 hand-labelled rows; grow it forever.</li>
+      <li><b>Criteria first:</b> write success numbers before building, or they will bend to fit the build.</li>
+      <li><b>Never trust one score:</b> an application needs an eval per question that matters.</li>
+    </ul>
+  </aside>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Evals are a loop, not a gate: task → criteria → golden data → run → score → analyse → improve → repeat. Production is just the loop’s outermost ring.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 04                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch4">
+  <header class="ch-head">
+    <div class="ch-num">04</div>
+    <div class="ch-kick"><b>Failure anatomy</b></div>
+    <h2>Why One Pipeline Is Never Enough</h2>
+    <p class="ch-lede">End-to-end testing tells you <em>that</em> the app failed. Component and workflow evals tell you <em>where</em> — and that changes what you fix.</p>
+  </header>
+
+  <h3 id="s4-1"><a class="h3-num" href="#s4-1">4.1</a>Failures live at three levels</h3>
+  <div class="grid3">
+    <div class="tile"><div class="tile-k">Level 1</div><h4>Component</h4><p>One piece misbehaves: the retriever misses documents, the re-ranker misorders them, the model ignores the format.</p></div>
+    <div class="tile"><div class="tile-k">Level 2</div><h4>Workflow</h4><p>Pieces compose badly: each step is fine alone, but the hand-offs corrupt the result.</p></div>
+    <div class="tile"><div class="tile-k">Level 3</div><h4>Application</h4><p>The end-to-end outcome is wrong — the user got a bad answer, whatever the cause.</p></div>
+  </div>
+  <p>If you only eval end-to-end, a red score tells you nothing about <b>which of the three levels broke</b>. You need a pipeline per level.</p>
+
+  <h3 id="s4-2"><a class="h3-num" href="#s4-2">4.2</a>A RAG failure, dissected</h3>
+  <p>A user asks a policy question. The retriever pulls five documents — <b>the correct one, D5, is among them</b>. Then the re-ranker buries D5 at the bottom of the list. The generator reads the top (wrong) context, mixes facts, and answers “6 weeks”. Incorrect.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 260" role="img" aria-label="RAG pipeline failure caused by the re-ranker">
+      <defs>
+        <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+      </defs>
+      <!-- query -->
+      <rect x="8" y="86" width="92" height="50" rx="9" class="box"/>
+      <text x="54" y="107" text-anchor="middle" class="lbl">USER</text>
+      <text x="54" y="123" text-anchor="middle" class="tiny">query</text>
+      <line x1="100" y1="111" x2="116" y2="111" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+      <!-- retriever -->
+      <rect x="122" y="86" width="110" height="50" rx="9" class="box"/>
+      <text x="177" y="107" text-anchor="middle" class="lbl">RETRIEVER</text>
+      <text x="177" y="123" text-anchor="middle" class="tiny">top-5 docs</text>
+      <line x1="232" y1="111" x2="248" y2="111" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+      <!-- doc chips -->
+      <g>
+        <rect x="254" y="30" width="52" height="26" rx="6" class="boxc"/><text x="280" y="47" text-anchor="middle" class="tiny">D1</text>
+        <rect x="254" y="62" width="52" height="26" rx="6" class="boxc"/><text x="280" y="79" text-anchor="middle" class="tiny">D2</text>
+        <rect x="254" y="94" width="52" height="26" rx="6" class="boxc"/><text x="280" y="111" text-anchor="middle" class="tiny">D3</text>
+        <rect x="254" y="126" width="52" height="26" rx="6" class="boxc"/><text x="280" y="143" text-anchor="middle" class="tiny">D4</text>
+        <rect x="254" y="158" width="52" height="26" rx="6" class="tinted"/><text x="280" y="175" text-anchor="middle" class="tiny acc">D5 ✓</text>
+      </g>
+      <text x="280" y="206" text-anchor="middle" class="tiny">correct doc retrieved</text>
+      <line x1="306" y1="111" x2="322" y2="111" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+      <!-- reranker -->
+      <rect x="328" y="86" width="110" height="50" rx="9" class="hotfill"/>
+      <text x="383" y="107" text-anchor="middle" class="lbl acc">RE-RANKER</text>
+      <text x="383" y="123" text-anchor="middle" class="tiny">D5 → ranked last!</text>
+      <line x1="438" y1="111" x2="454" y2="111" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+      <!-- generator -->
+      <rect x="460" y="86" width="110" height="50" rx="9" class="box"/>
+      <text x="515" y="107" text-anchor="middle" class="lbl">GENERATOR</text>
+      <text x="515" y="123" text-anchor="middle" class="tiny">reads wrong context</text>
+      <line x1="570" y1="111" x2="586" y2="111" class="ln" stroke-width="1.5" marker-end="url(#a4)"/>
+      <!-- answer -->
+      <rect x="592" y="86" width="120" height="50" rx="9" class="hotfill"/>
+      <text x="652" y="107" text-anchor="middle" class="lbl acc">“6 weeks”</text>
+      <text x="652" y="123" text-anchor="middle" class="tiny acc">WRONG ✗</text>
+      <!-- levels -->
+      <line x1="122" y1="236" x2="232" y2="236" class="ln"/>
+      <text x="177" y="228" text-anchor="middle" class="tiny">component evals pass</text>
+      <line x1="328" y1="236" x2="570" y2="236" class="lnacc" stroke-width="1.5"/>
+      <text x="449" y="228" text-anchor="middle" class="tiny acc">component eval: re-ranker fails ← fix here</text>
+    </svg>
+    <figcaption><b>Fig 4.1</b> — The end-to-end eval only says “wrong answer”. Component evals localise the fault: retriever fine, re-ranker broken.</figcaption>
+  </figure>
+
+  <p>The fix is surgical — swap or fine-tune the <b>re-ranker</b> and leave everything else untouched. Without component-level evals you might have “fixed” the prompt, the model, or the retriever instead, and never solved it.</p>
+
+  <h3 id="s4-3"><a class="h3-num" href="#s4-3">4.3</a>What evals must cover — three risk families</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Family 1 · Application quality</caption>
+    <thead><tr><th>Scope</th><th>What to measure</th></tr></thead>
+    <tbody>
+      <tr><td>Any LLM app</td><td>Correctness · relevance · completeness · instruction following</td></tr>
+      <tr><td>RAG systems</td><td>Context relevance · groundedness / faithfulness · citation accuracy</td></tr>
+      <tr><td>Agents</td><td>Tool selection · parameter correctness · task completion · error recovery</td></tr>
+      <tr><td>Multi-turn chat</td><td>Context retention · knowing when to ask clarifying questions</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="grid2">
+    <div class="tile">
+      <div class="tile-k">Family 2 · Safety</div>
+      <h4>Can it hurt someone?</h4>
+      <ul>
+        <li>Toxicity &amp; harmful content</li>
+        <li>Bias across groups</li>
+        <li>PII leakage</li>
+        <li>Prompt injection &amp; jailbreaks</li>
+      </ul>
+    </div>
+    <div class="tile">
+      <div class="tile-k">Family 3 · Operations</div>
+      <h4>Can you afford to run it?</h4>
+      <ul>
+        <li>Latency per request</li>
+        <li>Cost &amp; token efficiency</li>
+        <li>Error rate / uptime</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>One score cannot represent a system. Build one eval pipeline per level (component, workflow, application) and per risk family (quality, safety, operations).</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 05                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch5">
+  <header class="ch-head">
+    <div class="ch-num">05</div>
+    <div class="ch-kick"><b>Methods</b></div>
+    <h2>How to Score: Eval Methods &amp; LLM-as-a-Judge</h2>
+    <p class="ch-lede">Three families of evaluators, when each one wins, and how to make an LLM grader trustworthy.</p>
+  </header>
+
+  <aside class="callout def">
+    <div class="callout-label">Definition · Eval method</div>
+    <p>An LLM eval method is the mechanism that decides whether an output is good or not — the actual procedure that takes an output and produces a judgement about it.</p>
+    <ul class="def-breakdown">
+      <li>Every eval pipeline is <b>executed by</b> exactly one of three things: a <b>program</b>, a <b>human</b>, or an <b>LLM</b>.</li>
+      <li>Building the golden dataset is a <b>separate activity</b> — the method is named after who <em>runs</em> the eval and extracts the scores, not who labelled the data.</li>
+    </ul>
+  </aside>
+
+  <h3 id="s5-1"><a class="h3-num" href="#s5-1">5.1</a>The three families</h3>
+  <div class="grid3">
+    <div class="tile">
+      
+      <h4>Programmatic</h4>
+      <p>Deterministic code scores the output: exact match, regex, Recall@K, JSON validity.</p>
+      <p class="small" style="margin:0">Cheap · fast · perfectly reproducible — but only where answers are checkable.</p>
+    </div>
+    <div class="tile">
+      
+      <h4>Human</h4>
+      <p>People grade with written rubrics; also red teaming, A/B testing and golden-dataset creation.</p>
+      <p class="small" style="margin:0">The gold standard for judgement — slow, expensive, and subjective without care.</p>
+    </div>
+    <div class="tile">
+      
+      <h4>LLM-as-a-Judge</h4>
+      <p>Another LLM grades outputs against a rubric — judgement that scales like code.</p>
+      <p class="small" style="margin:0">Scales beautifully, but must be <b>calibrated against humans</b> before you trust it.</p>
+    </div>
+  </div>
+
+  <h3 id="s5-2"><a class="h3-num" href="#s5-2">5.2</a>Programmatic, in action: Recall@K</h3>
+  <p>The setting: a RAG chatbot for the CampusX website, and a <b>component-level</b> eval aimed at just its retriever. Questions are sent <b>only to the retriever</b> — not to the whole bot — and the success criterion is <b>Recall@K</b>: <em>out of all the correct documents that exist, how many did the system fetch in its top-K results?</em></p>
+  <p>The golden dataset: 50–100 questions a real user might ask (easy, difficult, edge cases, random), each labelled by a <b>human expert</b> who searched the vector database and marked which document IDs hold the answer. A program then sends every question to the retriever (K = 5), compares fetched IDs against the gold ones, computes recall per question, and averages.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Recall at K worked example">
+      <defs>
+        <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+      </defs>
+      <text x="120" y="26" text-anchor="middle" class="ttl">THE CORPUS · VECTOR DB</text>
+      <rect x="40" y="44" width="160" height="40" rx="8" class="tinted"/>
+      <text x="120" y="62" text-anchor="middle" class="lbl">doc 1001</text>
+      <text x="120" y="77" text-anchor="middle" class="tiny acc">holds the answer</text>
+      <rect x="40" y="92" width="160" height="40" rx="8" class="tinted"/>
+      <text x="120" y="110" text-anchor="middle" class="lbl">doc 1003</text>
+      <text x="120" y="125" text-anchor="middle" class="tiny acc">holds the answer</text>
+      <rect x="40" y="140" width="160" height="40" rx="8" class="box"/>
+      <text x="120" y="164" text-anchor="middle" class="lbl">everything else…</text>
+      <line x1="212" y1="150" x2="258" y2="150" class="ln" stroke-width="1.5" marker-end="url(#a5)"/>
+      <text x="235" y="140" text-anchor="middle" class="tiny">k = 5</text>
+      <text x="392" y="26" text-anchor="middle" class="ttl">RETRIEVER · TOP-5</text>
+      <rect x="264" y="44" width="256" height="44" rx="8" class="tinted"/>
+      <text x="392" y="62" text-anchor="middle" class="lbl">rank 1 · doc 1001</text>
+      <text x="392" y="77" text-anchor="middle" class="tiny acc">relevant ✓</text>
+      <rect x="264" y="96" width="256" height="38" rx="8" class="box"/>
+      <text x="392" y="120" text-anchor="middle" class="lbl">rank 2 · doc 102</text>
+      <rect x="264" y="142" width="256" height="38" rx="8" class="box"/>
+      <text x="392" y="166" text-anchor="middle" class="lbl">rank 3 · doc 104</text>
+      <rect x="264" y="188" width="256" height="38" rx="8" class="box"/>
+      <text x="392" y="212" text-anchor="middle" class="lbl">rank 4 · doc 105</text>
+      <rect x="264" y="234" width="256" height="38" rx="8" class="box"/>
+      <text x="392" y="258" text-anchor="middle" class="lbl">rank 5 · doc 106</text>
+      <text x="392" y="290" text-anchor="middle" class="tiny">doc 1003 never made the cut ✗</text>
+      <rect x="556" y="100" width="150" height="90" rx="10" class="hotfill"/>
+      <text x="631" y="132" text-anchor="middle" class="lbl acc">Recall@5</text>
+      <text x="631" y="158" text-anchor="middle" style="font-size:22px;font-family:'Antic Didone',serif" class="acc">1 / 2 = 50%</text>
+      <text x="631" y="178" text-anchor="middle" class="tiny">avg over dataset ≈ 67%</text>
+    </svg>
+    <figcaption><b>Fig 5.1</b> — Recall@K = relevant docs retrieved ÷ relevant docs that exist. Here 1 of 2 → 50%; averaged across the golden set, 67%.</figcaption>
+  </figure>
+
+  <p>Concretely: for the question <em>“What are the prerequisites for the ML course, and how long is it?”</em> the gold documents are <span class="mono">1001</span> and <span class="mono">1003</span>; the retriever returns <span class="mono">1001, 102, 104, 105, 106</span> — one of two, so recall is <b>50%</b> for that question. Another question whose single gold doc gets fetched scores <b>100%</b>. Recall can never exceed 100% or drop below 0 — and no human was needed anywhere in the scoring.</p>
+
+  <p>If the average comes back too low, the standard improvement ladder is:</p>
+  <div class="chips">
+    <span class="chip">1 · better embedding model</span>
+    <span class="chip">2 · query expansion / rewriting</span>
+    <span class="chip">3 · increase K</span>
+    <span class="chip">4 · add re-ranking</span>
+  </div>
+  <p class="small">Re-ranking is the subtle one: if the right doc sits at rank 8, raising K to 10 finds it — and a re-ranker can then pull it into the top 3 where the generator will actually read it.</p>
+
+  <aside class="callout">
+    <div class="callout-label">Fine print · relevancy has more than one aspect</div>
+    <p>Recall@K covers only <b>one</b> aspect of relevancy — <em>of the correct documents, how many did we fetch?</em> Two others exist: <b>precision</b> (of the documents fetched, how many were useless?) and <b>ranking quality</b> (did the best ones land on top?). One metric measures one aspect — choose consciously.</p>
+  </aside>
+
+  <h3 id="s5-3"><a class="h3-num" href="#s5-3">5.3</a>Human eval, done properly</h3>
+  <p>The worked example: the same CampusX chatbot, but now the target is the <b>entire application</b> and the question is <b>helpfulness</b> — was the answer accurate, complete, and in the right tone? No program can judge that, so a human grader runs the pipeline end to end: send each question to the chatbot, read the answer, score it against the rubric, average at the end.</p>
+  <ul>
+    <li><b>Written rubrics</b> — helpfulness on a 1–5 scale, each level defined in words: <b>5</b> = accurate, complete, right tone · <b>3</b> = partially helpful · <b>1</b> = answers something else entirely.</li>
+    <li><b>The dataset holds only questions</b> — no gold answers at all. Remember this; it decides the reference-free classification in <a class="inline" href="#s5-6">§5.6</a>.</li>
+    <li><b>Multiple graders = a rubric debugger</b> — if grader A scores 2 and grader B scores 4 on the same answers, their disagreement isn’t about the chatbot; it exposes <b>ambiguity in your rubric</b>. Refine until graders converge — one grader’s mood is not a metric.</li>
+    <li><b>The trade-off</b> — human judgement is the most <b>reliable</b> signal you can buy, and the most <b>expensive</b>. At real scale — lakhs of users — pure human eval stops being affordable.</li>
+  </ul>
+  <p>Humans actually appear in LLM evals in <b>five distinct ways</b>, not one:</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>The five kinds of human evaluation</caption>
+    <thead><tr><th>Form</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td>Direct grading &amp; rating</td><td>A grader scores outputs against a rubric — the flow described above</td></tr>
+      <tr><td>Red teaming</td><td>A team deliberately attacks the system before launch; every break found goes back to the dev team to fix</td></tr>
+      <tr><td>A/B testing</td><td>Two versions run live in production; real users’ ratings pick the winner</td></tr>
+      <tr><td>Golden dataset creation</td><td>Marking “the answer hides in doc 1001” <em>is itself an act of evaluation</em></td></tr>
+      <tr><td>Human-in-the-loop</td><td>Grey-area cases too ambiguous for programs or LLM judges get escalated to a person</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s5-4"><a class="h3-num" href="#s5-4">5.4</a>LLM-as-a-Judge: the UPSC grader</h3>
+  <p>The scenario: a platform running <b>mock UPSC exams at scale</b>. Prelims are MCQ — trivial to automate. Mains answers are subjective, so grading needs subject-matter experts paid per paper; with 10,000 students, that bill destroys the business. The pitch: an LLM grades <em>like</em> an expert at a fraction of the cost. Your job is to evaluate whether it actually does.</p>
+  <p>The <b>success criterion</b> writes itself: <mark>the platform grades answers the way human experts would</mark>. So the golden dataset is built by one expert: first define a <b>per-question rubric</b> — for “Ethical governance is impossible without administrative accountability — Discuss (15 marks)”, the five dimensions are: mentions both concepts · explains the link between them · gives mechanisms · cites examples · lands a balanced conclusion — then hand-grade <b>50–100 real student answers</b> against it. Those human marks become the reference.</p>
+  <p>Now the eval method is an LLM. Every answer goes to the judge with the question, the maximum marks, the exact rubric, and strict instructions:</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 250" role="img" aria-label="LLM as a judge grading flow">
+      <defs>
+        <marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+      </defs>
+      <!-- inputs -->
+      <rect x="10" y="30" width="180" height="44" rx="8" class="box"/>
+      <text x="100" y="49" text-anchor="middle" class="lbl">QUESTION</text>
+      <text x="100" y="64" text-anchor="middle" class="tiny">the exam prompt</text>
+      <rect x="10" y="84" width="180" height="44" rx="8" class="box"/>
+      <text x="100" y="103" text-anchor="middle" class="lbl">MODEL ANSWER</text>
+      <text x="100" y="118" text-anchor="middle" class="tiny">what the candidate wrote</text>
+      <rect x="10" y="138" width="180" height="58" rx="8" class="tinted"/>
+      <text x="100" y="158" text-anchor="middle" class="lbl">RUBRIC · 5 DIMS</text>
+      <text x="100" y="173" text-anchor="middle" class="tiny">concepts · link · mechanisms ·</text>
+      <text x="100" y="186" text-anchor="middle" class="tiny">examples · balanced conclusion</text>
+      <line x1="190" y1="110" x2="238" y2="110" class="ln" stroke-width="1.5" marker-end="url(#a6)"/>
+      <!-- judge -->
+      <rect x="244" y="52" width="200" height="122" rx="12" class="hotfill"/>
+      <text x="344" y="80" text-anchor="middle" class="ttl acc">JUDGE LLM</text>
+      <text x="344" y="100" text-anchor="middle" class="tiny">instructions in the prompt:</text>
+      <text x="344" y="118" text-anchor="middle" class="tiny">· no marks for verbosity, stuffing</text>
+      <text x="344" y="133" text-anchor="middle" class="tiny">· reward structure &amp; balance</text>
+      <text x="344" y="148" text-anchor="middle" class="tiny">· justify every mark you give</text>
+      <line x1="444" y1="113" x2="490" y2="113" class="ln" stroke-width="1.5" marker-end="url(#a6)"/>
+      <!-- output -->
+      <rect x="496" y="52" width="214" height="122" rx="12" class="boxc"/>
+      <text x="603" y="80" text-anchor="middle" class="ttl">MARKS + REASONS</text>
+      <text x="603" y="100" text-anchor="middle" class="tiny">content 7/10 — covers 3 of 4 points…</text>
+      <text x="603" y="117" text-anchor="middle" class="tiny">structure 6/10 — intro but no flow…</text>
+      <text x="603" y="134" text-anchor="middle" class="tiny">depth 5/10 — assertions, no analysis…</text>
+      <text x="603" y="151" text-anchor="middle" class="tiny">… per dimension, with justification</text>
+      <!-- calibration strip -->
+      <rect x="10" y="214" width="700" height="1" class="box" style="fill:var(--hair-strong)"/>
+      <text x="360" y="238" text-anchor="middle" class="tiny">the justification matters as much as the mark — it is how you audit the judge</text>
+    </svg>
+    <figcaption><b>Fig 5.2</b> — LLM-as-a-Judge: question + answer + explicit rubric in, justified per-dimension marks out.</figcaption>
+  </figure>
+
+  <h3 id="s5-5"><a class="h3-num" href="#s5-5">5.5</a>Trust, but verify — calibrating the judge</h3>
+  <p>A judge you haven’t validated is just another vibe. Here the calibration is natural: human and LLM graded the <b>same answers</b> with the <b>same rubric</b>, so the two mark-columns sit side by side and the success criterion — “grades like a human” — becomes a number:</p>
+  <ol>
+    <li>Grade the golden sample <b>by hand</b> (the human gold marks).</li>
+    <li>Have the judge grade the same sample.</li>
+    <li>Compute the gap with <b>MAE — mean absolute error</b>: per answer take <span class="mono">|human − judge|</span>, then average. E.g. <span class="mono">(|13−12| + |4−8| + |8−8| + …) ÷ 50</span>.</li>
+    <li>Tighten and repeat: swap in a <b>better judge model</b>, rewrite the <b>judge prompt</b>, refine the <b>rubric</b> — loop until the gap is acceptable.</li>
+  </ol>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>Suppose the formula returns <mark>MAE = 2.3</mark>: on average the LLM deviates <b>±2.3 marks</b> from the human per answer — not yet trustworthy. Iterate and drive MAE <b>toward 0</b>; a near-zero MAE means the judge grades exactly like the expert, and only then may it grade at scale.</p>
+  </aside>
+
+  <h3 id="s5-6"><a class="h3-num" href="#s5-6">5.6</a>Reference-based vs reference-free</h3>
+  <p>One last classification — orthogonal to the three methods. <b>Reference-based</b>: every test case carries a known-correct answer (or the key things a correct answer must contain), written down in advance; you grade by comparing the output against that reference. <b>Reference-free</b>: no predefined correct answer exists; you judge the output on its own terms against criteria — the rubric is a <em>scale, not an answer key</em>.</p>
+  <p>You have already seen both in this chapter. The retriever eval was <b>reference-based</b> (gold document IDs). The UPSC judge eval was <b>reference-based</b> too — the human marks are the reference the judge must match. The chatbot helpfulness eval was <b>reference-free</b>: its dataset held only questions. The one-question test for classifying any pipeline: <mark>does the golden dataset contain the correct answer?</mark></p>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th></th><th>Reference-based</th><th>Reference-free</th></tr></thead>
+    <tbody>
+      <tr><td>Gold answer?</td><td>Yes — compare output against a reference</td><td>No single right answer exists</td></tr>
+      <tr><td>Typical checks</td><td class="mono">exact match · similarity · Recall@K</td><td class="mono">helpfulness · tone · groundedness</td></tr>
+      <tr><td>Typical scorer</td><td>Programmatic metrics</td><td>Human rubric or LLM judge</td></tr>
+      <tr><td>Example</td><td>“Is the extracted date equal to the gold date?”</td><td>“Is this support reply polite and useful?”</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s5-7"><a class="h3-num" href="#s5-7">5.7</a>Choosing a method</h3>
+  <ul>
+    <li><b>Output is checkable</b> (class, date, JSON, retrieved docs) → <b>programmatic</b>. Always the first choice.</li>
+    <li><b>Output is subjective and volume is large</b> → <b>LLM judge</b>, calibrated against human grades.</li>
+    <li><b>Stakes are high or safety-critical</b> → <b>humans</b>: rubrics, red teams, A/B panels.</li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Code where you can, humans where you must, an LLM judge for everything in between — and never trust the judge until its MAE against humans is near zero.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 06                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch6">
+  <header class="ch-head">
+    <div class="ch-num">06</div>
+    <div class="ch-kick"><b>Lifecycle</b></div>
+    <h2>Offline vs Online Evals</h2>
+    <p class="ch-lede">Before release you test for correctness. After release you watch for normalcy. Different data, different methods, different questions.</p>
+  </header>
+
+  <h3 id="s6-1"><a class="h3-num" href="#s6-1">6.1</a>Definitions</h3>
+  <p><b>Offline evals</b> run <em>before release</em>, on your golden dataset, under controlled conditions. <b>Online evals</b> run <em>in production</em>, on live traffic, while real users are watching. They are complements, not alternatives.</p>
+
+  <div class="tbl-wrap">
+  <table>
+    <caption>Offline vs online at a glance</caption>
+    <thead><tr><th></th><th>Offline</th><th>Online</th></tr></thead>
+    <tbody>
+      <tr><td>When</td><td>Pre-release, in CI/CD</td><td>Continuously, in production</td></tr>
+      <tr><td>Data</td><td>Golden dataset (labelled)</td><td>Live traffic (unlabelled)</td></tr>
+      <tr><td>Core question</td><td>“Is it <b>correct</b>?”</td><td>“Is it <b>normal</b>?”</td></tr>
+      <tr><td>Main uses</td><td>Gating, version comparison, regression testing</td><td>Monitoring, drift detection, failure discovery</td></tr>
+      <tr><td>Cost profile</td><td>Bounded — fixed dataset</td><td>Ongoing — sampling + judges on live logs</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s6-2"><a class="h3-num" href="#s6-2">6.2</a>What offline evals are for</h3>
+  <ul>
+    <li><b>Pre-release gating</b> — wired into CI/CD: if accuracy on the golden set drops below threshold (say <span class="mono">92%</span>), the deploy is blocked automatically.</li>
+    <li><b>Version comparison</b> — prompt A vs prompt B, model A vs model B, same dataset, same protocol, honest numbers.</li>
+    <li><b>Regression testing</b> — every change re-runs the golden set, so a fix in one place can’t silently break another.</li>
+  </ul>
+
+  <h3 id="s6-3"><a class="h3-num" href="#s6-3">6.3</a>Why production still surprises you</h3>
+  <div class="grid3">
+    <div class="tile"><h4>Unanticipated inputs</h4><p>Real users type things you would never think to test — other languages, abuse, edge formats, nonsense.</p></div>
+    <div class="tile"><h4>Emergent failures</h4><p>Some bugs appear only at scale: rare failure modes, and biases visible only across thousands of interactions.</p></div>
+    <div class="tile"><h4>Drift</h4><p>The world moves on. A model tuned for January’s data can quietly degrade by June — with zero code changes.</p></div>
+  </div>
+
+  <aside class="callout">
+    <div class="callout-label">Key idea · correctness vs normalcy</div>
+    <p>Live traffic has no labels, so you usually can’t score correctness in production. Instead you monitor the <mark>distribution of scores and signals against a baseline</mark> — and alert when today’s distribution stops looking like the healthy one.</p>
+  </aside>
+
+  <h3 id="s6-4"><a class="h3-num" href="#s6-4">6.4</a>Logging — the foundation of everything online</h3>
+  <p>Every request should leave a complete, queryable trace:</p>
+  <div class="grid2">
+    <div class="tile">
+      <div class="tile-k">What to log</div>
+      <ul>
+        <li>IDs — conversation, turn, user, session</li>
+        <li>Timestamps</li>
+        <li>The user’s question</li>
+        <li>Retrieved context (for RAG)</li>
+        <li>The model output</li>
+        <li>Latency, token counts, cost</li>
+        <li>Errors and behavioural signals</li>
+      </ul>
+    </div>
+    <div class="tile">
+      <div class="tile-k">How logging must behave</div>
+      <ul>
+        <li><b>Non-blocking</b> — never slow the user down</li>
+        <li><b>Durable &amp; queryable</b> — analysis happens later</li>
+        <li><b>Late signal attachment</b> — a thumbs-down arrives minutes after the answer; it must still find its turn</li>
+        <li><b>PII masked</b> — logs are not a privacy leak</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small">Tooling mentioned in the lecture: <span class="mono">LangSmith</span> for tracing and evaluation infrastructure.</p>
+
+  <h3 id="s6-5"><a class="h3-num" href="#s6-5">6.5</a>Two kinds of signals</h3>
+  <p><b>Captured signals</b> are already inside the log — thumbs up/down, latency, cost. <b>Computed signals</b> need an evaluator to exist — faithfulness, hallucination rate. They flow through different pipes:</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 330" role="img" aria-label="Captured versus computed signal pipelines">
+      <defs>
+        <marker id="a7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+        <marker id="a7b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="acc"/>
+        </marker>
+      </defs>
+      <!-- captured -->
+      <text x="360" y="26" text-anchor="middle" class="ttl">CAPTURED SIGNALS — thumbs · latency · cost</text>
+      <rect x="30" y="42" width="150" height="48" rx="9" class="box"/>
+      <text x="105" y="71" text-anchor="middle" class="lbl">LOG</text>
+      <line x1="180" y1="66" x2="228" y2="66" class="ln" stroke-width="1.5" marker-end="url(#a7)"/>
+      <rect x="234" y="42" width="150" height="48" rx="9" class="box"/>
+      <text x="309" y="71" text-anchor="middle" class="lbl">DASHBOARD</text>
+      <line x1="384" y1="66" x2="432" y2="66" class="ln" stroke-width="1.5" marker-end="url(#a7)"/>
+      <rect x="438" y="42" width="150" height="48" rx="9" class="box"/>
+      <text x="513" y="71" text-anchor="middle" class="lbl">ALERT</text>
+      <text x="630" y="60" text-anchor="middle" class="tiny">Slack /</text>
+      <text x="630" y="74" text-anchor="middle" class="tiny">PagerDuty</text>
+      <line x1="588" y1="66" x2="612" y2="66" class="ln" stroke-width="1.5" marker-end="url(#a7)"/>
+      <!-- computed -->
+      <text x="360" y="142" text-anchor="middle" class="ttl">COMPUTED SIGNALS — faithfulness · hallucination</text>
+      <rect x="6" y="158" width="120" height="48" rx="9" class="box"/>
+      <text x="66" y="187" text-anchor="middle" class="lbl">LOG</text>
+      <line x1="126" y1="182" x2="150" y2="182" class="ln" stroke-width="1.5" marker-end="url(#a7)"/>
+      <rect x="156" y="158" width="150" height="48" rx="9" class="tinted"/>
+      <text x="231" y="179" text-anchor="middle" class="lbl">STRATIFIED</text>
+      <text x="231" y="194" text-anchor="middle" class="tiny">sampling</text>
+      <line x1="306" y1="182" x2="330" y2="182" class="ln" stroke-width="1.5" marker-end="url(#a7)"/>
+      <rect x="336" y="158" width="140" height="48" rx="9" class="hotfill"/>
+      <text x="406" y="179" text-anchor="middle" class="lbl acc">LLM-JUDGE</text>
+      <text x="406" y="194" text-anchor="middle" class="tiny">evaluator</text>
+      <line x1="476" y1="182" x2="500" y2="182" class="ln" stroke-width="1.5" marker-end="url(#a7)"/>
+      <rect x="506" y="158" width="108" height="48" rx="9" class="box"/>
+      <text x="560" y="187" text-anchor="middle" class="lbl">DASHBOARD</text>
+      <line x1="614" y1="182" x2="638" y2="182" class="ln" stroke-width="1.5" marker-end="url(#a7)"/>
+      <rect x="644" y="158" width="70" height="48" rx="9" class="box"/>
+      <text x="679" y="187" text-anchor="middle" class="lbl">ALERT</text>
+      <!-- loop -->
+      <rect x="150" y="252" width="180" height="46" rx="9" class="hotfill"/>
+      <text x="240" y="280" text-anchor="middle" class="lbl acc">PRODUCTION FAILURE</text>
+      <path d="M330 275 L 392 275" class="lnacc" stroke-width="1.5" marker-end="url(#a7b)"/>
+      <rect x="398" y="252" width="170" height="46" rx="9" class="tinted"/>
+      <text x="483" y="271" text-anchor="middle" class="lbl">GOLDEN DATASET</text>
+      <text x="483" y="286" text-anchor="middle" class="tiny">failure added as a test case</text>
+      <text x="360" y="322" text-anchor="middle" class="tiny">sampling keeps cost bounded — judge a representative slice, not every request</text>
+    </svg>
+    <figcaption><b>Fig 6.1</b> — Online evals in two pipes: captured signals flow straight to dashboards; computed signals pass through stratified sampling and an LLM judge first. Failures loop back into the golden dataset.</figcaption>
+  </figure>
+
+  <h3 id="s6-6"><a class="h3-num" href="#s6-6">6.6</a>Closing the loop — the self-improving system</h3>
+  <p>The two worlds feed each other. Online monitoring discovers real failures → those failures are added to the golden dataset → offline evals now cover them → fixes ship with confidence → repeat. <mark>The dataset grows forever, and the system gets harder to break with every incident.</mark></p>
+
+  <h3 id="s6-7"><a class="h3-num" href="#s6-7">6.7</a>Tooling mentioned in the series</h3>
+  <div class="chips">
+    <span class="chip">LangSmith — tracing, datasets, evaluators, monitoring &amp; alerting</span>
+    <span class="chip">LangGraph — agent orchestration</span>
+    <span class="chip">Ragas — RAG evals</span>
+    <span class="chip">DeepEval — eval framework</span>
+  </div>
+  <p class="small">In LangSmith, the same evaluator concept serves both worlds: run it over <b>traces</b> (online) or over a <b>dataset</b> (offline).</p>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Offline evals answer “is it correct?” before release; online evals answer “is it normal?” after. Logging is the spine, and production failures are the golden dataset’s food.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 07                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch7">
+  <header class="ch-head">
+    <div class="ch-num">07</div>
+    <div class="ch-kick"><b>Model evals &amp; capabilities</b></div>
+    <h2>Evaluating the Model Itself</h2>
+    <p class="ch-lede">How to choose between models with evidence instead of hype — and the eight capabilities every benchmark map is drawn from.</p>
+  </header>
+
+  <h3 id="s7-1"><a class="h3-num" href="#s7-1">7.1</a>Why an AI engineer needs model evals</h3>
+  <ul>
+    <li><b>Choosing between models</b> — GPT vs Claude vs Gemini vs open weights, for <em>your</em> workload.</li>
+    <li><b>Tracking new releases</b> — every few weeks a new model claims the crown; evals tell you whether switching is worth it.</li>
+    <li><b>Safety posture</b> — what will this model refuse, reveal, or confidently get wrong?</li>
+    <li><b>Build vs buy</b> — is a frontier API necessary, or does a small self-hosted model clear your bar?</li>
+  </ul>
+
+  <h3 id="s7-2"><a class="h3-num" href="#s7-2">7.2</a>The four-step process</h3>
+  <ol class="steps">
+    <li><b>Decide the capability.</b> <span>Which of the eight capabilities actually matters for your product? A legal summariser lives and dies by long context, not by coding benchmarks.</span></li>
+    <li><b>Bring a test.</b> <span>Pick a public benchmark for that capability — or build a custom eval set from your own data (better, when you can).</span></li>
+    <li><b>Run every candidate under a fixed protocol.</b> <span>Same prompts, same settings, same scoring for every model — otherwise the comparison is fiction.</span></li>
+    <li><b>Score and interpret.</b> <span>Numbers plus your constraints: cost, latency, privacy, hosting. The “best” model is the best one <em>for the product</em>.</span></li>
+  </ol>
+
+  <h3 id="s7-3"><a class="h3-num" href="#s7-3">7.3</a>Benchmarks vs custom eval sets</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th></th><th>Public benchmarks</th><th>Custom eval sets</th></tr></thead>
+    <tbody>
+      <tr><td>Data</td><td>Generic, published</td><td>Your real tasks, private</td></tr>
+      <tr><td>Cost</td><td>Cheap — results already exist</td><td>You build and maintain it</td></tr>
+      <tr><td>Comparability</td><td>Every model has a score</td><td>Only models you run yourself</td></tr>
+      <tr><td>Main risk</td><td>Contamination + task mismatch — the model may have memorised the test</td><td>Quality depends on your labelling discipline</td></tr>
+      <tr><td>Verdict</td><td>Great for a first shortlist</td><td>Where real decisions get made</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s7-4"><a class="h3-num" href="#s7-4">7.4</a>The Model A / Model B decision</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Two candidates for the email router — which do you ship?</caption>
+    <thead><tr><th></th><th>Model A</th><th>Model B</th></tr></thead>
+    <tbody>
+      <tr><td>Accuracy (golden set)</td><td class="mono">94%</td><td class="mono">91%</td></tr>
+      <tr><td>Cost per 1,000 emails</td><td class="mono">$6.00</td><td class="mono">$0.21</td></tr>
+      <tr><td>Latency</td><td class="mono">4.1 s</td><td class="mono">0.9 s</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Three points of accuracy for roughly <b>28× the cost</b> and <b>4.5× the latency</b> — you ship <mark>Model B</mark>. Evals turn the question from “which model is best?” into “which model is best <em>for this product</em>?”</p>
+
+  <h3 id="s7-5"><a class="h3-num" href="#s7-5">7.5</a>The eight capabilities, in detail</h3>
+  <div class="grid2">
+    <div class="tile">
+      <div class="tile-k">01 · Knowledge &amp; reasoning</div>
+      <p>Does the model know things and can it reason over them?</p>
+      <div class="bench"><b>MMLU</b> — 57 subjects spanning humanities, STEM and social sciences.</div>
+    </div>
+    <div class="tile">
+      <div class="tile-k">02 · Coding &amp; software eng.</div>
+      <p>The breakout LLM business — coding assistants have reached multi-billion-dollar valuations (Cursor &amp; co.).</p>
+      <div class="bench"><b>HumanEval</b> — write functions from docstrings · <b>SWE-bench</b> — resolve real GitHub issues.</div>
+    </div>
+    <div class="tile">
+      <div class="tile-k">03 · Mathematics</div>
+      <p>Multi-step arithmetic and word problems — reasoning you can verify mechanically.</p>
+      <div class="bench"><b>GSM8K</b> — grade-school math word problems.</div>
+    </div>
+    <div class="tile">
+      <div class="tile-k">04 · Long context</div>
+      <p>A 128k-token window is marketing; can the model actually <em>use</em> it?</p>
+      <div class="bench"><b>Needle-in-a-Haystack</b> — hide one fact in a huge document, ask about it.</div>
+    </div>
+    <div class="tile">
+      <div class="tile-k">05 · Vision &amp; multimodal</div>
+      <p>Reading charts, diagrams, screenshots and photos together with text.</p>
+      <div class="bench"><b>MMMU</b> — college-level questions mixing text and images.</div>
+    </div>
+    <div class="tile">
+      <div class="tile-k">06 · Agentic &amp; tool use</div>
+      <p>The agent trilogy: pick the right tool, pass the right parameters, chain calls in the right order — and recover from errors.</p>
+      <div class="bench"><b>Tool-calling suites</b> — measured per Chapter 04’s agent risk rows.</div>
+    </div>
+    <div class="tile">
+      <div class="tile-k">07 · Safety &amp; alignment</div>
+      <p>Truthfulness vs <b>sycophancy</b> (agreeing with the user instead of being right), refusal behaviour, and dangerous-capability checks such as cybersecurity benchmarks.</p>
+      <div class="bench"><b>Truthfulness &amp; safety suites</b> — alignment, not just ability.</div>
+    </div>
+    <div class="tile">
+      <div class="tile-k">08 · Instruction following</div>
+      <p>Obeying verifiable constraints: “three bullet points”, “under 100 words”, “JSON only”.</p>
+      <div class="bench"><b>IFEval</b> — instructions with checkable compliance.</div>
+    </div>
+  </div>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Capability first, test second, fixed protocol third, interpretation last. And when the numbers land, remember Model B: the right model is the one that clears your bar at a cost and speed your product can live with.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<footer class="colophon">
+  <div class="fin">— to be <i>continued</i> —</div>
+  <p>Compiled from Lectures 01–07 of the CampusX “LLM Evals” series · For personal revision<br>
+  The series is ongoing — new chapters will be appended as further videos are covered.</p>
+</footer>
+
+</div>
+</main>
+
+<script>
+// reading progress
+const prog = document.getElementById('progress');
+function onScroll(){
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  prog.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+}
+document.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+// scrollspy
+const links = [...document.querySelectorAll('#toc a')];
+const secs = links.map(a => document.querySelector(a.getAttribute('href')));
+const spy = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    const i = secs.indexOf(e.target);
+    if (e.isIntersecting && i > -1){
+      links.forEach(l => l.classList.remove('active'));
+      links[i].classList.add('active');
+    }
+  });
+}, {rootMargin:'-20% 0px -70% 0px'});
+secs.forEach(s => s && spy.observe(s));
+
+// theme toggle — overrides the system setting and remembers the choice
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeToggle');
+const darkMq = matchMedia('(prefers-color-scheme: dark)');
+const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : darkMq.matches;
+const labelTheme = () => { themeBtn.textContent = isDark() ? 'Light mode' : 'Dark mode'; };
+themeBtn.addEventListener('click', () => {
+  root.dataset.theme = isDark() ? 'light' : 'dark';
+  try { localStorage.setItem('theme', root.dataset.theme); } catch(e) {}
+  labelTheme();
+});
+darkMq.addEventListener('change', labelTheme);
+labelTheme();
+
+// contents drawer (narrow screens)
+const sidebar = document.getElementById('sidebar');
+const navToggle = document.getElementById('navToggle');
+const scrim = document.getElementById('scrim');
+function setNav(open){
+  sidebar.classList.toggle('open', open);
+  scrim.classList.toggle('open', open);
+  navToggle.setAttribute('aria-expanded', open);
+}
+navToggle.addEventListener('click', () => setNav(!sidebar.classList.contains('open')));
+scrim.addEventListener('click', () => setNav(false));
+links.forEach(l => l.addEventListener('click', () => setNav(false)));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setNav(false); });
+</script>
+</body>
+</html>
