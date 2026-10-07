@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Evaluations — Revision Notes · CampusX Series</title>
-<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Covers Lectures 1–7.">
+<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Covers Lectures 1–8.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Antic+Didone&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -195,6 +195,7 @@ a.inline{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--
 .case .case-out b{color:var(--accent)}
 .case ul{font-size:14.5px;margin-bottom:10px}
 .case .chips{margin:6px 0 12px}
+.code{background:var(--card);border-radius:12px;padding:18px 22px;margin:22px 0;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink-strong);white-space:pre}
 
 /* ---------- tables ---------- */
 table{width:100%;border-collapse:collapse;margin:26px 0 30px;font-size:14px;background:transparent}
@@ -336,7 +337,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
   .chapter{page-break-before:always;border:none}
   .masthead{animation:none}
   figure.diagram svg{min-width:0}
-  figure.diagram,.callout,.case,.takeaway{break-inside:avoid}
+  figure.diagram,.callout,.case,.takeaway,.code{break-inside:avoid}
 }
 </style>
 </head>
@@ -360,10 +361,11 @@ svg .lnacc{stroke:var(--accent);fill:none}
     <li><a href="#ch5"><span class="toc-num">05</span>Eval Methods &amp; LLM-as-a-Judge</a></li>
     <li><a href="#ch6"><span class="toc-num">06</span>Offline vs Online Evals</a></li>
     <li><a href="#ch7"><span class="toc-num">07</span>Model Evals &amp; the 8 Capabilities</a></li>
+    <li><a href="#ch8"><span class="toc-num">08</span>Benchmarks &amp; Their Pitfalls</a></li>
   </ol>
   <div class="sidebar-foot">
     Series in progress —<br>
-    <b>7</b> chapters covered so far.<br>
+    <b>8</b> chapters covered so far.<br>
     New lectures → new chapters.
     <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
   </div>
@@ -377,12 +379,12 @@ svg .lnacc{stroke:var(--accent);fill:none}
   <p class="lede">Everything the series has taught so far about testing large language models and the applications built on top of them — distilled into one reference, organised lecture by lecture, for fast revision.</p>
   <div class="mast-meta">
     <div><div class="k">Source</div><div class="v">CampusX · “LLM Evals” playlist (Hindi)</div></div>
-    <div><div class="k">Coverage</div><div class="v">Lectures 1–7 · concepts, workflows &amp; case studies</div></div>
+    <div><div class="k">Coverage</div><div class="v">Lectures 1–8 · concepts, workflows &amp; case studies</div></div>
     <div><div class="k">Format</div><div class="v">Definitions · diagrams · tables · worked numbers</div></div>
   </div>
   <div class="banner">
     <span class="tag">Status</span>
-    <p>The lecture series is still in progress. These notes cover the seven videos completed so far — append a new chapter each time you finish the next video.</p>
+    <p>The lecture series is still in progress. These notes cover the eight videos completed so far — append a new chapter each time you finish the next video.</p>
   </div>
   <details class="mobile-toc">
     <summary>Contents</summary>
@@ -394,6 +396,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
       <li><a href="#ch5">05 · Eval Methods &amp; LLM-as-a-Judge</a></li>
       <li><a href="#ch6">06 · Offline vs Online Evals</a></li>
       <li><a href="#ch7">07 · Model Evals &amp; the 8 Capabilities</a></li>
+      <li><a href="#ch8">08 · Benchmarks &amp; Their Pitfalls</a></li>
     </ol>
   </details>
 </header>
@@ -2273,7 +2276,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
     </tbody>
   </table>
   </div>
-  <p class="small">Next in the series: benchmarks in detail — how they work, how they are scored and how to read them — followed by how to run custom model evals of your own.</p>
+  <p class="small">Next: Chapter 08 takes benchmarks apart — how they work, how they are scored and how far to trust them. Custom model evals follow later in the series.</p>
 
   <div class="takeaway">
     <div class="tk-label">Takeaway</div>
@@ -2282,9 +2285,369 @@ svg .lnacc{stroke:var(--accent);fill:none}
 </section>
 
 <!-- ============================================================ -->
+<!-- CHAPTER 08                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch8">
+  <header class="ch-head">
+    <div class="ch-num">08</div>
+    <div class="ch-kick"><b>Benchmarking</b></div>
+    <h2>Benchmarks: How They Work, and When Not to Trust Them</h2>
+    <p class="ch-lede">Chapter 07 named benchmarks as one of the two kinds of model eval. This chapter opens one up: what is inside it, how it is run, who runs it — and four reasons a published score deserves a pinch of salt.</p>
+  </header>
+
+  <h3 id="s8-1"><a class="h3-num" href="#s8-1">8.1</a>What a benchmark is</h3>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Benchmark</div>
+    <p>A <b>standardised test</b> used to measure <b>one particular capability</b> of a model.</p>
+  </aside>
+  <p>Every model launch comes wrapped in them — “scored X on SWE-bench, Y on ARC-AGI”. Whatever the benchmark, it is made of the same four parts. The running example is <b>GSM8K</b> (<em>Grade School Math, ~8K rows</em>), an older benchmark from around 2021 that tests the mathematics capability.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 222" role="img" aria-label="The four parts of a benchmark, with GSM8K as the example: dataset and task, run configuration, scoring, and aggregation">
+      <defs>
+        <marker id="a8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+        <marker id="a8b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="acc"/>
+        </marker>
+      </defs>
+      <text x="360" y="20" text-anchor="middle" class="ttl">ONE BENCHMARK · EXAMPLE: GSM8K</text>
+
+      <rect x="12" y="36" width="164" height="174" rx="8" class="box"/>
+      <text x="94" y="58" text-anchor="middle" class="tiny acc">PART 1</text>
+      <text x="94" y="78" text-anchor="middle" class="lbl">DATASET &amp; TASK</text>
+      <text x="94" y="102" text-anchor="middle" class="tiny">questions plus the</text>
+      <text x="94" y="116" text-anchor="middle" class="tiny">answer key</text>
+      <line x1="30" y1="134" x2="158" y2="134" class="ln"/>
+      <text x="94" y="156" text-anchor="middle" class="tiny acc">≈ 8,500 grade-school</text>
+      <text x="94" y="170" text-anchor="middle" class="tiny acc">maths problems, each</text>
+      <text x="94" y="184" text-anchor="middle" class="tiny acc">with its solution</text>
+
+      <rect x="188" y="36" width="164" height="174" rx="8" class="box"/>
+      <text x="270" y="58" text-anchor="middle" class="tiny acc">PART 2</text>
+      <text x="270" y="78" text-anchor="middle" class="lbl">RUN CONFIG</text>
+      <text x="270" y="102" text-anchor="middle" class="tiny">the conditions every</text>
+      <text x="270" y="116" text-anchor="middle" class="tiny">model is run under</text>
+      <line x1="206" y1="134" x2="334" y2="134" class="ln"/>
+      <text x="270" y="156" text-anchor="middle" class="tiny acc">8-shot · chain of</text>
+      <text x="270" y="170" text-anchor="middle" class="tiny acc">thought · temp ≈ 0</text>
+      <text x="270" y="184" text-anchor="middle" class="tiny acc">no tools</text>
+
+      <rect x="364" y="36" width="164" height="174" rx="8" class="box"/>
+      <text x="446" y="58" text-anchor="middle" class="tiny acc">PART 3</text>
+      <text x="446" y="78" text-anchor="middle" class="lbl">SCORING</text>
+      <text x="446" y="102" text-anchor="middle" class="tiny">pull out the answer,</text>
+      <text x="446" y="116" text-anchor="middle" class="tiny">compare with the key</text>
+      <line x1="382" y1="134" x2="510" y2="134" class="ln"/>
+      <text x="446" y="156" text-anchor="middle" class="tiny acc">extract “72”, then</text>
+      <text x="446" y="170" text-anchor="middle" class="tiny acc">exact match</text>
+      <text x="446" y="184" text-anchor="middle" class="tiny acc">→ 1 or 0</text>
+
+      <rect x="540" y="36" width="164" height="174" rx="8" class="box"/>
+      <text x="622" y="58" text-anchor="middle" class="tiny acc">PART 4</text>
+      <text x="622" y="78" text-anchor="middle" class="lbl">AGGREGATION</text>
+      <text x="622" y="102" text-anchor="middle" class="tiny">combine per-question</text>
+      <text x="622" y="116" text-anchor="middle" class="tiny">scores into one</text>
+      <line x1="558" y1="134" x2="686" y2="134" class="ln"/>
+      <text x="622" y="156" text-anchor="middle" class="tiny acc">mean of all the</text>
+      <text x="622" y="170" text-anchor="middle" class="tiny acc">1s and 0s</text>
+      <text x="622" y="184" text-anchor="middle" class="tiny acc">→ e.g. 92%</text>
+    </svg>
+    <figcaption><b>Fig 8.1</b> — Anatomy of a benchmark. Top half of each card: what the part is. Bottom half: what it looks like in GSM8K.</figcaption>
+  </figure>
+
+  <p>All four are specified in the benchmark’s <b>research paper</b>. Almost every benchmark in use today — GSM8K, MMLU, SWE-bench — began as a paper in which researchers proposed a way to test some capability; the dataset then goes online, becomes popular, and every new model is measured against it.</p>
+
+  <h3 id="s8-2"><a class="h3-num" href="#s8-2">8.2</a>Part 1 — the dataset and the task</h3>
+  <p>The dataset is <b>questions plus the answer key</b> — in effect a golden dataset. GSM8K’s is freely available on Hugging Face and Kaggle. One row looks like this:</p>
+  <div class="case">
+    <div class="case-tag"><b>GSM8K</b> · sample row</div>
+    <p><b>Question:</b> Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether?</p>
+    <p><b>Worked solution:</b> In May she sold 48 ÷ 2 = 24. Altogether 48 + 24 = <b>72</b>.</p>
+    <div class="case-out"><b>The task:</b> given a grade-school maths problem (roughly class 6–8 level), generate the answer.</div>
+  </div>
+
+  <h3 id="s8-3"><a class="h3-num" href="#s8-3">8.3</a>Part 2 — the run configuration</h3>
+  <p>A benchmark also tells you the <b>settings to use while evaluating</b>. The reason is fairness: you cannot run one model under one set of conditions and another model under different ones and then compare the scores. The run configuration has three groups of settings.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>The run configuration, setting by setting</caption>
+    <thead><tr><th>Group</th><th>Setting</th><th>The choice</th><th>GSM8K</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="2">Prompt construction</td><td>Zero-shot or few-shot</td><td>Send the question alone, or first show some solved examples in the prompt. Few-shot improves scores.</td><td>Classically <b>8-shot</b></td></tr>
+      <tr><td>Chain of thought or direct</td><td>Ask the model to solve step by step, or to state the answer straight away. Without step-by-step, mistakes are more likely.</td><td>Chain of thought <b>allowed</b></td></tr>
+      <tr><td rowspan="2">Decoding &amp; sampling</td><td>Temperature</td><td>Kept around <b>0</b>. Higher values produce creative answers that vary from run to run.</td><td>≈ 0</td></tr>
+      <tr><td>Max tokens</td><td>Too low and a model that is reasoning step by step is cut off before it reaches the answer; too high and a strong model can reason at great length. Fixed in advance, the same for every model.</td><td>Fixed</td></tr>
+      <tr><td rowspan="2">Scoring strategy &amp; environment</td><td>Pass@1 / Pass@k / Majority@k</td><td>How many attempts count — see below.</td><td>Most likely Pass@1</td></tr>
+      <tr><td>Tools</td><td>With web search a model could look answers up; with a code interpreter it could compute every maths answer in code. Some benchmarks need tools — SWE-bench must fetch GitHub issues.</td><td><b>Not allowed</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="grid3">
+    <div class="tile"><div class="tile-k">Pass@1</div><h4>One attempt</h4><p>The question is asked once. The answer is right or it is wrong. The <b>strict</b> option.</p></div>
+    <div class="tile"><div class="tile-k">Pass@k</div><h4>Best of k</h4><p>Ask the same question k times. If <em>any one</em> attempt is correct, it counts as correct. More <b>lenient</b> — used when questions are very hard.</p></div>
+    <div class="tile"><div class="tile-k">Majority@k</div><h4>Most common of k</h4><p>Ask k times and take the answer that appears most often — the <b>mode</b> — as the model’s answer.</p></div>
+  </div>
+  <aside class="callout warn">
+    <div class="callout-label">Reading habit</div>
+    <p>When someone says “our model scores 82% on benchmark X”, dig one level down: was that Pass@1, Pass@k or Majority@k? The same model gets different numbers under each.</p>
+  </aside>
+
+  <h3 id="s8-4"><a class="h3-num" href="#s8-4">8.4</a>Part 3 — scoring</h3>
+  <p>Scoring one response takes two steps.</p>
+  <ol>
+    <li><b>Extraction.</b> An LLM can phrase its reply any way it likes: <span class="mono">“The answer is 72”</span>, just <span class="mono">“72”</span>, or <span class="mono">“seventy-two”</span>. You first have to get the answer into one clean form — by enforcing structured output, or with regular expressions — so that all that remains is <span class="mono">72</span>. This takes more work than it sounds.</li>
+    <li><b>Comparison.</b> For a <b>closed-ended</b> answer like this one it is an exact check: <span class="mono">72 == 72</span> gives 1, anything else gives 0. For an <b>open-ended</b> benchmark, where the answer is a paragraph, you need an LLM-as-a-judge or a human — the same three methods as Chapter 05.</li>
+  </ol>
+
+  <h3 id="s8-5"><a class="h3-num" href="#s8-5">8.5</a>Part 4 — aggregation</h3>
+  <p>Each question has earned a 1 or a 0; aggregation turns them into the headline number. Usually it is a plain mean: 920 correct out of 1,000 is <b>92%</b>.</p>
+  <p>Sometimes it is less simple. MMLU spans 57 subjects and may report each separately — biology 87%, physics 91%, economics 72%. To get one overall score you cannot just add the percentages and divide by 57, because the subjects have <b>different numbers of questions</b>. A <mark>weighted mean</mark> is needed. So aggregation, too, has strategies, and the paper says which one applies.</p>
+
+  <h3 id="s8-6"><a class="h3-num" href="#s8-6">8.6</a>Running a benchmark — it is a loop</h3>
+  <p>Imagine you are a lab with a new model and want its GSM8K score. Evaluating on a benchmark means following the paper, one row at a time.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 244" role="img" aria-label="The benchmark evaluation loop: load an item, build the prompt, call the model, extract the answer, score it, store the score; repeat for every row, then aggregate">
+      <text x="10" y="30" class="tiny">INSIDE THE LOOP — ONE PASS PER QUESTION</text>
+      <rect x="10" y="44" width="104" height="56" rx="8" class="box"/>
+      <text x="62" y="68" text-anchor="middle" class="lbl">LOAD ITEM</text>
+      <text x="62" y="85" text-anchor="middle" class="tiny">next question</text>
+      <line x1="114" y1="72" x2="122" y2="72" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="128" y="44" width="104" height="56" rx="8" class="box"/>
+      <text x="180" y="68" text-anchor="middle" class="lbl">BUILD PROMPT</text>
+      <text x="180" y="85" text-anchor="middle" class="tiny">+ 8 examples</text>
+      <line x1="232" y1="72" x2="240" y2="72" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="246" y="44" width="104" height="56" rx="8" class="hotfill"/>
+      <text x="298" y="68" text-anchor="middle" class="lbl acc">CALL MODEL</text>
+      <text x="298" y="85" text-anchor="middle" class="tiny">pinned config</text>
+      <line x1="350" y1="72" x2="358" y2="72" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="364" y="44" width="104" height="56" rx="8" class="box"/>
+      <text x="416" y="68" text-anchor="middle" class="lbl">EXTRACT</text>
+      <text x="416" y="85" text-anchor="middle" class="tiny">“…is 72” → 72</text>
+      <line x1="468" y1="72" x2="476" y2="72" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="482" y="44" width="104" height="56" rx="8" class="box"/>
+      <text x="534" y="68" text-anchor="middle" class="lbl">SCORE</text>
+      <text x="534" y="85" text-anchor="middle" class="tiny">72 == 72 → 1</text>
+      <line x1="586" y1="72" x2="594" y2="72" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="600" y="44" width="104" height="56" rx="8" class="box"/>
+      <text x="652" y="68" text-anchor="middle" class="lbl">STORE</text>
+      <text x="652" y="85" text-anchor="middle" class="tiny">append to list</text>
+
+      <path d="M652 100 L652 138 L62 138 L62 106" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <text x="357" y="128" text-anchor="middle" class="tiny">repeat for every row of the dataset — about 8,500 times</text>
+
+      <line x1="357" y1="138" x2="357" y2="170" class="lnacc" stroke-width="1.5" marker-end="url(#a8b)"/>
+      <text x="369" y="160" class="tiny acc">when the rows run out</text>
+      <rect x="257" y="176" width="200" height="54" rx="8" class="hotfill"/>
+      <text x="357" y="199" text-anchor="middle" class="lbl acc">AGGREGATE</text>
+      <text x="357" y="216" text-anchor="middle" class="tiny">mean of the list = the score</text>
+    </svg>
+    <figcaption><b>Fig 8.2</b> — Benchmark evaluation is a loop over the dataset, with every setting taken from the paper, followed by one aggregation step.</figcaption>
+  </figure>
+
+  <div class="code">results = []
+for item in dataset:                       # 1. load the next question
+    prompt = build_prompt(item, few_shot=8)    # 2. as the paper says
+    raw    = model.generate(prompt,            # 3. pinned config
+                 temperature=0, max_tokens=...)
+    pred   = extract_answer(raw)           # 4. "The answer is 72" -> 72
+    score  = (pred == item.answer)         # 5. True / False
+    results.append(score)                  # 6. store
+final_score = mean(results)                # after the loop: aggregate</div>
+
+  <h3 id="s8-7"><a class="h3-num" href="#s8-7">8.7</a>The eval harness — everything around the loop</h3>
+  <p>The loop above is pseudo-code, and it looks trivial. Write the real thing and it stops being trivial. Running it <em>reliably</em> across 8,000–10,000 LLM calls needs a good deal of engineering around it:</p>
+  <div class="chips">
+    <span class="chip">robust answer extraction</span>
+    <span class="chip">scoring exactly as the paper defines</span>
+    <span class="chip">batching thousands of requests</span>
+    <span class="chip">retrying failed API calls</span>
+    <span class="chip">handling rate limits</span>
+  </div>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Eval harness</div>
+    <p>The code you write — or, far more often, the <b>library you use</b> — to actually execute a model evaluation: all the plumbing around the loop.</p>
+    <ul class="def-breakdown">
+      <li><b>The analogy:</b> the benchmark is the <b>exam paper</b>; the harness is the <b>examination administration</b> that conducts the exam and handles everything else on your behalf.</li>
+      <li><b>Why not write your own:</b> it is tedious, and home-made plumbing is not standardised — run it twice and you may get two different results.</li>
+    </ul>
+  </aside>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Harness libraries mentioned</caption>
+    <thead><tr><th>Library</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">lm-evaluation-harness</td><td>From EleutherAI. The industry standard for running benchmarks, used by large companies too. Supports many benchmarks out of the box, and models from API providers or pulled from Hugging Face.</td></tr>
+      <tr><td class="mono">Inspect · HELM</td><td>Other well-known harnesses.</td></tr>
+      <tr><td class="mono">DeepEval</td><td>Can run benchmarks too (GSM8K is in its list), but it is aimed more at application evals: more code to write, fewer benchmarks, and most of those are already saturated. Handy for trying your own small fine-tuned model.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>With a harness, the whole of Fig 8.2 collapses into <b>one command</b> — no loop, no plumbing. The demo ran GSM8K against an OpenAI model, from a notebook:</p>
+  <div class="code"># 1 · install the harness (notebook cell)
+!pip install -q "lm_eval[api]"
+
+# 2 · provide the API key without printing it
+import os
+from getpass import getpass
+
+os.environ["OPENAI_API_KEY"] = getpass("Enter OpenAI API key: ")
+
+# 3 · run the benchmark
+!lm-eval run \
+    --model openai-chat-completions \
+    --model_args "model=gpt-5.6-luna,num_concurrent=5,max_retries=5" \
+    --tasks gsm8k_cot \
+    --num_fewshot 8 \
+    --apply_chat_template \
+    --limit 20 \
+    --output_path ./gsm8k_results \
+    --log_samples</div>
+  <div class="tbl-wrap">
+  <table>
+    <caption>What each argument does</caption>
+    <thead><tr><th>Argument</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">model openai-chat-completions</td><td>The kind of model being tested — here one served through OpenAI’s chat API. The same library can also load a model from Hugging Face</td></tr>
+      <tr><td class="mono">model_args</td><td>Which model to evaluate (<span class="mono">gpt-5.6-luna</span>), how many questions to send concurrently (5), and how many retries on a failed call (5)</td></tr>
+      <tr><td class="mono">tasks gsm8k_cot</td><td>The benchmark — GSM8K with chain of thought allowed</td></tr>
+      <tr><td class="mono">num_fewshot 8</td><td>8-shot prompting, as the benchmark is classically reported</td></tr>
+      <tr><td class="mono">apply_chat_template</td><td>Wrap the prompt in the model’s chat format</td></tr>
+      <tr><td class="mono">limit 20</td><td>Only the first 20 questions — a smoke test that the set-up works. <b>Remove it for a real evaluation.</b></td></tr>
+      <tr><td class="mono">output_path · log_samples</td><td>Where results go, and that every sample should be logged — one JSON object per question with its ID, the response and the score</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>With <span class="mono">limit 20</span> the harness made 20 API calls and reported about <mark>90%</mark> — 18 of 20 correct — for roughly ₹3–4. The full run of ~8,500 questions would cost around ₹2,300. Remove the limit and the result is a publishable GSM8K score, produced the same way a lab would produce it.</p>
+  </aside>
+  <p class="small">The <span class="mono">!</span> prefix runs a shell command from a notebook cell; drop it when running in a terminal. Results land in <span class="mono">./gsm8k_results</span>.</p>
+
+  <h3 id="s8-8"><a class="h3-num" href="#s8-8">8.8</a>Who runs benchmarks — and how far to trust each</h3>
+  <p>Most benchmarks are public, so anyone can run them. Three groups actually do.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>The three evaluators</caption>
+    <thead><tr><th>Who</th><th>Why they run benchmarks</th><th>How to read their numbers</th></tr></thead>
+    <tbody>
+      <tr><td>Frontier labs<br><span class="small">OpenAI, Anthropic, Google DeepMind…</span></td><td><b>Development</b> — checkpoints are pulled out mid-training and benchmarked, to see whether training is heading the right way and change course if not.<br><b>Release gating</b> — is the new version better than the last, and should it ship?<br><b>Marketing</b> — a top score on a coding benchmark is covered by every YouTuber.</td><td>As a <b>ceiling</b>, not an expectation. Self-run, in their own controlled settings, under the most favourable conditions — and <b>cherry-picked</b>: strong benchmarks are shown prominently, weak ones pushed down.</td></tr>
+      <tr><td>Third-party evaluators<br><span class="small">leaderboards such as LM Arena</span></td><td>Evaluation <em>is</em> their product. Independent organisations that benchmark many models and publish a ranking.</td><td>The <b>most reliable</b>. Every model is tested under the same conditions and the methodology is published. They also report what labs often omit: <b>cost and latency</b>.</td></tr>
+      <tr><td>AI engineering teams<br><span class="small">you</span></td><td>The benchmarks are public and the harnesses are free, so run the evaluation yourself.</td><td>Your own conditions, plus your own latency and cost measurements. The numbers closest to your reality.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout warn">
+    <div class="callout-label">The mileage rule</div>
+    <p>A lab’s benchmark number is like a car’s advertised mileage: 25 on the brochure, far less on your daily commute. If the answer to “who ran this evaluation?” is “we did, in our own settings”, <b>do not choose your model on that number alone</b>.</p>
+  </aside>
+  <p class="small">Think of a leaderboard as an IMDb rating for models. Technically it is an aggregation over several benchmarks — covered in detail in the next lecture.</p>
+
+  <h3 id="s8-9"><a class="h3-num" href="#s8-9">8.9</a>Four reasons to take benchmarks with a pinch of salt</h3>
+  <p>Benchmarks are useful, not flawless. In many situations they mislead.</p>
+
+  <p><b>1 · Contamination.</b> Most benchmarks are public: paper, methodology <em>and dataset</em> sit on the open internet, some since 2021. A model trained recently on a fresh scrape of the web has very probably swallowed those questions together with their answers.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 138" role="img" aria-label="Contamination: a public benchmark sits on the web, the web is scraped into pre-training data, the new model has therefore seen the answers, and it then scores high on the same benchmark">
+      <rect x="10" y="20" width="120" height="56" rx="8" class="box"/>
+      <text x="70" y="44" text-anchor="middle" class="lbl">BENCHMARK</text>
+      <text x="70" y="61" text-anchor="middle" class="tiny">Q + A, public</text>
+      <line x1="130" y1="48" x2="149" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="155" y="20" width="120" height="56" rx="8" class="box"/>
+      <text x="215" y="44" text-anchor="middle" class="lbl">THE WEB</text>
+      <text x="215" y="61" text-anchor="middle" class="tiny">online for years</text>
+      <line x1="275" y1="48" x2="294" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="300" y="20" width="120" height="56" rx="8" class="tinted"/>
+      <text x="360" y="44" text-anchor="middle" class="lbl">PRE-TRAINING</text>
+      <text x="360" y="61" text-anchor="middle" class="tiny">scraped web data</text>
+      <line x1="420" y1="48" x2="439" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="445" y="20" width="120" height="56" rx="8" class="box"/>
+      <text x="505" y="44" text-anchor="middle" class="lbl">NEW MODEL</text>
+      <text x="505" y="61" text-anchor="middle" class="tiny">saw the answers</text>
+      <line x1="565" y1="48" x2="584" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a8)"/>
+      <rect x="590" y="20" width="120" height="56" rx="8" class="hotfill"/>
+      <text x="650" y="44" text-anchor="middle" class="lbl acc">SAME TEST</text>
+      <text x="650" y="61" text-anchor="middle" class="tiny">scores high</text>
+      <text x="360" y="112" text-anchor="middle" class="tiny">reasoning or recall? the score can no longer tell you which</text>
+    </svg>
+    <figcaption><b>Fig 8.3</b> — Contamination. The test leaked into the training data, so a high score may be memorisation.</figcaption>
+  </figure>
+  <p>The remedies: <b>private benchmarks</b>, whose data is not published, and <b>dynamic benchmarks</b>, whose dataset is refreshed on a schedule instead of staying frozen for five years as a static benchmark’s does.</p>
+
+  <p><b>2 · Saturation.</b> A benchmark is static; models keep improving every few months. Eventually every model scores near the top, and the benchmark can no longer tell them apart.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 196" role="img" aria-label="Life cycle of a benchmark: when new, models score low and spread out; as models improve scores rise; when saturated all models cluster above ninety percent; then the benchmark is retired and replaced">
+      <rect x="12" y="16" width="164" height="166" rx="8" class="box"/>
+      <text x="94" y="38" text-anchor="middle" class="tiny acc">STAGE 1</text>
+      <text x="94" y="58" text-anchor="middle" class="lbl">NEW</text>
+      <line x1="32" y1="96" x2="156" y2="96" class="ln" stroke-width="1.5"/>
+      <circle cx="63" cy="96" r="5" class="acc"/><circle cx="69" cy="96" r="5" class="acc" fill-opacity=".6"/><circle cx="77" cy="96" r="5" class="acc"/>
+      <text x="32" y="116" text-anchor="middle" class="tiny">0</text><text x="156" y="116" text-anchor="middle" class="tiny">100%</text>
+      <text x="94" y="146" text-anchor="middle" class="tiny">hard for every model</text>
+      <text x="94" y="160" text-anchor="middle" class="tiny">scores of 25–36%</text>
+
+      <rect x="188" y="16" width="164" height="166" rx="8" class="box"/>
+      <text x="270" y="38" text-anchor="middle" class="tiny acc">STAGE 2</text>
+      <text x="270" y="58" text-anchor="middle" class="lbl">IMPROVING</text>
+      <line x1="208" y1="96" x2="332" y2="96" class="ln" stroke-width="1.5"/>
+      <circle cx="270" cy="96" r="5" class="acc"/><circle cx="282" cy="96" r="5" class="acc"/><circle cx="295" cy="96" r="5" class="acc"/>
+      <text x="208" y="116" text-anchor="middle" class="tiny">0</text><text x="332" y="116" text-anchor="middle" class="tiny">100%</text>
+      <text x="270" y="146" text-anchor="middle" class="tiny">each generation</text>
+      <text x="270" y="160" text-anchor="middle" class="tiny">climbs: 50%, then 70%</text>
+
+      <rect x="364" y="16" width="164" height="166" rx="8" class="boxc hot"/>
+      <text x="446" y="38" text-anchor="middle" class="tiny acc">STAGE 3</text>
+      <text x="446" y="58" text-anchor="middle" class="lbl acc">SATURATED</text>
+      <line x1="384" y1="96" x2="508" y2="96" class="ln" stroke-width="1.5"/>
+      <circle cx="498" cy="96" r="5" class="acc" fill-opacity=".6"/><circle cx="501" cy="96" r="5" class="acc" fill-opacity=".6"/><circle cx="502" cy="96" r="5" class="acc" fill-opacity=".6"/>
+      <text x="384" y="116" text-anchor="middle" class="tiny">0</text><text x="508" y="116" text-anchor="middle" class="tiny">100%</text>
+      <text x="446" y="146" text-anchor="middle" class="tiny">all bunched at 92–95%</text>
+      <text x="446" y="160" text-anchor="middle" class="tiny">no way to rank them</text>
+
+      <rect x="540" y="16" width="164" height="166" rx="8" class="box" stroke-dasharray="5 4"/>
+      <text x="622" y="38" text-anchor="middle" class="tiny acc">STAGE 4</text>
+      <text x="622" y="58" text-anchor="middle" class="lbl">RETIRED</text>
+      <text x="622" y="100" text-anchor="middle" class="tiny">replaced by a new,</text>
+      <text x="622" y="114" text-anchor="middle" class="tiny">harder benchmark</text>
+      <text x="622" y="146" text-anchor="middle" class="tiny">and the cycle</text>
+      <text x="622" y="160" text-anchor="middle" class="tiny">starts again</text>
+    </svg>
+    <figcaption><b>Fig 8.4</b> — The life cycle of a benchmark. Each dot is one model’s score. An exam on which everyone gets the same marks cannot say who is better.</figcaption>
+  </figure>
+  <p class="small">GSM8K itself is saturated — everyone scores in the mid-to-high 90s — and is no longer used to compare models. MMLU and SWE-bench were named as saturated as well.</p>
+
+  <p><b>3 · Configuration gaming.</b> When a lab benchmarks its own model, it controls the run configuration — and can tilt it. Give your own model the most favourable settings and a rival the defaults; or hand your model a Python interpreter on GSM8K so it computes every answer in code. Configuration alone can move a score by <b>5–10%</b>. And you are rarely told the max tokens, the reasoning level, the temperature, the latency or the cost — only a single “92%”.</p>
+
+  <p><b>4 · Aggregation that hides weakness.</b> The final averaging step can bury a problem. On MMLU a model may do well in physics and badly in economics; the provider reports only the <b>average</b>. You are building an economics chatbot, see a strong MMLU score, deploy — and discover it is poor at exactly your subject.</p>
+
+  <div class="tbl-wrap">
+  <table>
+    <caption>The four pitfalls at a glance</caption>
+    <thead><tr><th>Pitfall</th><th>What goes wrong</th><th>What it means for you</th></tr></thead>
+    <tbody>
+      <tr><td>Contamination</td><td>The test data was in the model’s training data</td><td>A high score may be memory, not ability</td></tr>
+      <tr><td>Saturation</td><td>Every model scores near the maximum</td><td>The benchmark no longer separates good from better</td></tr>
+      <tr><td>Configuration gaming</td><td>Settings are chosen to flatter one model</td><td>Self-reported scores are not comparable across labs</td></tr>
+      <tr><td>Aggregation</td><td>One average conceals weak sub-scores</td><td>Ask for the breakdown that matches your use case</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The conclusion is the same as Chapter 07’s Model A / Model B story, reached from the other side: do not accept the number that is thrown at you. Build your own methodology and decide on that.</p>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>A benchmark is a dataset, a run configuration, a scoring rule and an aggregation rule — run in a loop by a harness. Its score is evidence, not a verdict: ask who ran it, under what settings, and what the average is hiding.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
 <footer class="colophon">
   <div class="fin">— to be <i>continued</i> —</div>
-  <p>Compiled from Lectures 01–07 of the CampusX “LLM Evals” series · For personal revision<br>
+  <p>Compiled from Lectures 01–08 of the CampusX “LLM Evals” series · For personal revision<br>
   The series is ongoing — new chapters will be appended as further videos are covered.</p>
 </footer>
 
