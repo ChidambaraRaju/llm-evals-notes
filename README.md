@@ -1,6 +1,6 @@
 # LLM Evals Notes
 
-Revision notes on evaluating large language models and LLM applications, written while following the CampusX lecture series on LLM Evaluations (Lectures 1–8).
+Revision notes on evaluating large language models and LLM applications, written while following the CampusX lecture series on LLM Evaluations. The series is ongoing; a new chapter is added as more of it is covered.
 
 The notes are a single self-contained HTML page — no build step, no dependencies.
 
@@ -14,6 +14,7 @@ The notes are a single self-contained HTML page — no build step, no dependenci
 6. Offline vs Online Evals
 7. Evaluating the Model Itself
 8. Benchmarks: How They Work, and When Not to Trust Them
+9. Leaderboards and Custom Evals: Choosing the Model
 
 ## How to view
 
