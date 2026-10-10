@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Evaluations — Revision Notes · CampusX Series</title>
-<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Covers Lectures 1–8.">
+<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Nine chapters so far.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&display=swap" rel="stylesheet">
@@ -422,10 +422,11 @@ svg .lnacc{stroke:var(--accent);fill:none}
     <li><a href="#ch6"><span class="toc-num">06</span>Offline vs Online Evals</a></li>
     <li><a href="#ch7"><span class="toc-num">07</span>Model Evals &amp; the 8 Capabilities</a></li>
     <li><a href="#ch8"><span class="toc-num">08</span>Benchmarks &amp; Their Pitfalls</a></li>
+    <li><a href="#ch9"><span class="toc-num">09</span>Leaderboards &amp; Choosing a Model</a></li>
   </ol>
   <div class="sidebar-foot">
     Series in progress —<br>
-    <b>8</b> chapters covered so far.<br>
+    <b>9</b> chapters covered so far.<br>
     New lectures → new chapters.
     <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
   </div>
@@ -436,15 +437,15 @@ svg .lnacc{stroke:var(--accent);fill:none}
 
 <header class="masthead" id="home">
   <h1>LLM<br>Evaluations</h1>
-  <p class="lede">Everything the series has taught so far about testing large language models and the applications built on top of them — distilled into one reference, organised lecture by lecture, for fast revision.</p>
+  <p class="lede">Everything the series has taught so far about testing large language models and the applications built on top of them — distilled into one reference, organised chapter by chapter, for fast revision.</p>
   <div class="mast-meta">
     <div><div class="k">Source</div><div class="v">CampusX · “LLM Evals” playlist (Hindi)</div></div>
-    <div><div class="k">Coverage</div><div class="v">Lectures 1–8 · concepts, workflows &amp; case studies</div></div>
+    <div><div class="k">Coverage</div><div class="v">9 chapters · concepts, workflows &amp; case studies</div></div>
     <div><div class="k">Format</div><div class="v">Definitions · diagrams · tables · worked numbers</div></div>
   </div>
   <div class="banner">
     <span class="tag">Status</span>
-    <p>The lecture series is still in progress. These notes cover the eight videos completed so far — append a new chapter each time you finish the next video.</p>
+    <p>The lecture series is still in progress. These notes cover what has been completed so far — a new chapter is appended as more of the series is covered.</p>
   </div>
   <!-- chapter list is filled in from the chapters below -->
   <h2 class="contents-title">Chapters</h2>
@@ -2593,7 +2594,7 @@ os.environ["OPENAI_API_KEY"] = getpass("Enter OpenAI API key: ")
     <div class="callout-label">The mileage rule</div>
     <p>A lab’s benchmark number is like a car’s advertised mileage: 25 on the brochure, far less on your daily commute. If the answer to “who ran this evaluation?” is “we did, in our own settings”, <b>do not choose your model on that number alone</b>.</p>
   </aside>
-  <p class="small">Think of a leaderboard as an IMDb rating for models. Technically it is an aggregation over several benchmarks — covered in detail in the next lecture.</p>
+  <p class="small">Think of a leaderboard as an IMDb rating for models. Technically it is an aggregation over several benchmarks — covered in detail in the next chapter.</p>
 
   <h3 id="s8-9"><a class="h3-num" href="#s8-9">8.9</a>Four reasons to take benchmarks with a pinch of salt</h3>
   <p>Benchmarks are useful, not flawless. In many situations they mislead.</p>
@@ -2695,9 +2696,559 @@ os.environ["OPENAI_API_KEY"] = getpass("Enter OpenAI API key: ")
 </section>
 
 <!-- ============================================================ -->
+<!-- CHAPTER 09                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch9">
+  <header class="ch-head">
+    <div class="ch-num">09</div>
+    <div class="ch-kick"><b>Model selection</b></div>
+    <h2>Leaderboards and Custom Evals: Choosing the Model</h2>
+    <p class="ch-lede">Chapter 08 ended on “do not accept the number thrown at you”. This chapter is the method that replaces it: use leaderboards to <em>filter</em> the field, then run your own eval on your own data to <em>decide</em> — worked end to end on one case study.</p>
+  </header>
+
+  <h3 id="s9-1"><a class="h3-num" href="#s9-1">9.1</a>What a leaderboard is</h3>
+  <aside class="callout def">
+    <div class="callout-label">Definition · LLM leaderboard</div>
+    <p>A <b>public ranking and comparison table</b> that shows how different LLMs perform on a <b>common set of evaluations</b>.</p>
+    <ul class="def-breakdown">
+      <li><b>Benchmark vs leaderboard:</b> the benchmark is the <b>exam</b>; the leaderboard is where the <b>results are published</b> — like the board in a school that lists who topped.</li>
+      <li><b>What it gives you:</b> one place to compare many models on the same test and see, at a glance, which is best at it.</li>
+    </ul>
+  </aside>
+
+  <h3 id="s9-2"><a class="h3-num" href="#s9-2">9.2</a>Why leaderboards exist</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Five jobs a leaderboard does</caption>
+    <thead><tr><th>Job</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td>Common reference</td><td>Every model sat the <b>same exam</b>, so models from different labs can be compared directly: who came first, second, last.</td></tr>
+      <tr><td>Trust</td><td>Leaderboards are usually <b>third-party</b>. A lab praising its own model has every reason to; an outsider who tested both rivals has far less at stake.</td></tr>
+      <tr><td>Selection without resources</td><td>You cannot run your own evals on the hundreds of models that exist — too much money, time and effort. Someone has already done it; pick from their top ten.</td></tr>
+      <tr><td>Spotting saturation</td><td>If the top ten models all sit at 92–94%, the <b>clustering</b> tells you the benchmark underneath is saturating.</td></tr>
+      <tr><td>Discovery</td><td>Ranks 1–4 are the usual names. Scroll to rank 10, 15, 20 and new models appear — not the best, but often <b>cheaper</b> and good enough for your purpose.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s9-3"><a class="h3-num" href="#s9-3">9.3</a>Who reads them, and for what</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>The five stakeholders</caption>
+    <thead><tr><th>Who</th><th>What they use a leaderboard for</th></tr></thead>
+    <tbody>
+      <tr><td>AI engineers</td><td><b>Shortlisting.</b> Go to the leaderboard for your domain and pull <em>candidate</em> models — never one final model. It takes you from 100 models to 5; your own evals do the rest.</td></tr>
+      <tr><td>Frontier labs</td><td><b>Positioning and release timing.</b> If the next model cannot even beat a rival’s <em>previous</em> one, releasing it is bad marketing — so they iterate again and ship only when they are clearly ahead. Models are sometimes entered under a hidden name first: “Nano Banana” appeared anonymously on an image leaderboard, swept it, and Google kept the name because it had already become famous.</td></tr>
+      <tr><td>Researchers</td><td><b>Research direction.</b> Which benchmarks are saturated, where progress is happening, what new technique is worth trying.</td></tr>
+      <tr><td>Policy makers &amp; safety institutes</td><td><b>Monitoring.</b> Which models operate at which level, and whether a new one has jumped so far ahead that they need to step in.</td></tr>
+      <tr><td>Open-source community</td><td><b>Visibility.</b> A small lab whose model lands in the top three or four on a single benchmark becomes known overnight — this is how several Chinese labs first entered the picture.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s9-4"><a class="h3-num" href="#s9-4">9.4</a>The four types of leaderboard</h3>
+  <div class="grid2">
+    <div class="tile"><div class="tile-k">Type 1 · least useful</div><h4>Benchmark-specific</h4><p>Ranks models on the result of <b>one benchmark</b>. Answers: <em>which model performs best on this benchmark?</em></p><p>The view is <b>narrow</b> — it says nothing about the model overall. Most famous benchmarks have one, built and maintained by the research team behind the benchmark.</p><div class="bench"><b>Example:</b> the Humanity’s Last Exam (HLE) leaderboard</div></div>
+    <div class="tile"><div class="tile-k">Type 2 · most useful</div><h4>Multi-benchmark</h4><p>Combines <b>many benchmarks and dimensions</b> into a cumulative score: knowledge, reasoning, maths, coding, instruction following, data analysis. Usually also reports <b>cost per token, latency, output speed and context window</b>.</p><p>Answers: <em>which model gives the strongest overall combination of capability, cost and performance?</em></p><div class="bench"><b>Examples:</b> LiveBench (23 tasks, 7 categories, contamination-free) · Artificial Analysis</div></div>
+    <div class="tile"><div class="tile-k">Type 3 · popular, biased</div><h4>Human-preference</h4><p>No benchmark at all. A user asks a question; <b>two anonymous models</b> answer; the user votes A, B, both good or both bad; only then are the names revealed. Enough votes become a ranking.</p><p>Heavily used in marketing (“top of the arena”). Scale makes it trustworthy enough, but what people <em>prefer</em> is not always what is <em>better</em>.</p><div class="bench"><b>Example:</b> LM Arena (battle mode), with separate boards for chat, code, image, video</div></div>
+    <div class="tile"><div class="tile-k">Type 4 · for one domain</div><h4>Application-specific</h4><p>Built around <b>one domain or job</b> — coding, agentic tasks, SQL generation, medical questions. May combine several benchmarks, but all inside that one domain.</p><p>The one to reach for when your application lives in a particular domain.</p><div class="bench"><b>Example:</b> Berkeley Function-Calling Leaderboard (tool-calling ability)</div></div>
+  </div>
+
+  <h3 id="s9-5"><a class="h3-num" href="#s9-5">9.5</a>Seven reasons not to trust a leaderboard blindly</h3>
+  <p>Model selection is step one of building an application, and step one of model selection is looking at a leaderboard. That breeds a bias: <em>it is on the leaderboard, so it must be right.</em> It is not that simple.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Where leaderboards mislead</caption>
+    <thead><tr><th>#</th><th>Reason</th><th>What goes wrong</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>Scores may not transfer to real applications</b></td><td>Benchmark data is clean and the task is clearly stated. The real world is messy: ambiguous requests, missing information, company-specific data, tool failures, unusual edge cases. <span class="small">Same as “solving Kaggle problems does not make you a good data scientist”.</span></td></tr>
+      <tr><td>2</td><td><b>Contamination</b></td><td>If the benchmark leaked into training data, the leaderboard score built on it is inflated too. The number may be genuine — or it may be memorisation.</td></tr>
+      <tr><td>3</td><td><b>Over-optimising for the leaderboard</b></td><td>Once a leaderboard gets popular, labs train or fine-tune to top <em>it</em>. To top a human-voted arena you please humans: nicer formatting, softer and more flattering answers. The rank rises; real-world capability does not.</td></tr>
+      <tr><td>4</td><td><b>Hidden choices in composite scores</b></td><td>Which benchmarks were included or excluded? How were scores normalised? How much weight does each capability get? Often you are not told. Prefer the leaderboard that is transparent about all three.</td></tr>
+      <tr><td>5</td><td><b>Small differences are not real differences</b></td><td>84.3 puts one model at rank 3 and 84.1 puts another at rank 5 — the gap is 0.2. They are at the same level, and rank 5 might suit your application better. <span class="small">JEE rank 1 and rank 25 are separated by a question or two.</span></td></tr>
+      <tr><td>6</td><td><b>Human-preference bias</b></td><td>People favour answers that are longer, more confident, better formatted and more entertaining. A genuinely better model that does none of that loses the vote.</td></tr>
+      <tr><td>7</td><td><b>Stale, incomplete or self-reported</b></td><td>The newest models are missing because nobody has updated the board; old or discontinued versions linger; and on some boards the company submits its own model’s result.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout def">
+    <div class="callout-label">Goodhart’s law</div>
+    <p>“When a measure becomes a <b>target</b>, it ceases to be a good measure.”</p>
+    <ul class="def-breakdown">
+      <li><b>The car analogy:</b> if buyers choose only on mileage, the whole engineering team optimises mileage — and driving dynamics, acceleration and everything else get worse. The car tops the one metric and is a poorer car.</li>
+      <li><b>Here:</b> models built to top leaderboards, whose actual performance does not follow.</li>
+    </ul>
+  </aside>
+
+  <h3 id="s9-6"><a class="h3-num" href="#s9-6">9.6</a>How to read a leaderboard as an AI engineer</h3>
+  <ol class="steps">
+    <li><b>Write your requirements before you open any leaderboard</b><span>What kind of application? How much latency can it tolerate? What cost can you bear? What are your context needs? Any deployment constraints — public API, or on-premise only? With these on paper you stop being biased toward rank 1. If it must run on-premise, the top closed model is simply not an option.</span></li>
+    <li><b>Go to the leaderboard that matches the job</b><span>Not whichever is most famous — see the table below.</span></li>
+    <li><b>Read it properly — the footnotes, not just the number</b><span>Read the definitions page and the FAQ. Check everything on the reading checklist below.</span></li>
+    <li><b>Shortlist three to five models against your criteria</b><span>Candidates, not a winner.</span></li>
+    <li><b>Run your own evaluation on those candidates</b><span>The most important step. The model that does best on <em>your</em> evaluation set is the one you use.</span></li>
+  </ol>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Step 2 — which leaderboard for which job</caption>
+    <thead><tr><th>You are building</th><th>Look at</th><th>Because</th></tr></thead>
+    <tbody>
+      <tr><td>An agent</td><td>An agent or function-calling leaderboard</td><td>It measures the capability the agent depends on</td></tr>
+      <tr><td>A chatbot</td><td>An LM Arena-style board</td><td>It measures chat quality directly</td></tr>
+      <tr><td>RAG</td><td>MTEB</td><td>RAG needs an embedding model, and MTEB ranks embedding models</td></tr>
+      <tr><td>Anything on a tight budget</td><td>Artificial Analysis · Vellum</td><td>They state exactly how fast each model is and what it costs</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><b>Step 3 — the reading checklist.</b></p>
+  <div class="chips">
+    <span class="chip">what exactly is being scored?</span>
+    <span class="chip">how is it scored?</span>
+    <span class="chip">who ran the evaluation?</span>
+    <span class="chip">what inference budget?</span>
+    <span class="chip">reasoning on or off?</span>
+    <span class="chip">how old is the dataset?</span>
+    <span class="chip">is it refreshed?</span>
+    <span class="chip">is there a private test set?</span>
+    <span class="chip">is the benchmark saturated?</span>
+    <span class="chip">are confidence intervals shown?</span>
+    <span class="chip">composite: what weights?</span>
+  </div>
+  <p class="small">On a small dataset with no confidence interval reported, two closely placed models are effectively the same.</p>
+  <aside class="callout warn">
+    <div class="callout-label">The one line to remember</div>
+    <p>A leaderboard is a <b>filtering tool, not a decision tool</b>. You never go to a leaderboard and decide “I will build on this model”. You use it to shortlist four or five, then run custom evals on all of them and pick one.</p>
+  </aside>
+
+  <h3 id="s9-7"><a class="h3-num" href="#s9-7">9.7</a>The case study — a text-to-SQL feature</h3>
+  <p>Benchmarks test generic capabilities on generic datasets. To know how a model performs for <em>your</em> application you run a <mark>custom model eval</mark>: the model, on your data, on your task. The rest of the chapter does this once, start to finish.</p>
+  <div class="case">
+    <div class="case-tag"><b>Case study</b> · you are the AI engineering team at ESPNcricinfo</div>
+    <h4>“Ask Cricinfo” — answer any cricket stats question</h4>
+    <p>During live matches, fans send questions — <em>What is Kohli’s batting average against Pakistan? How many wickets did Bumrah take the last time these teams met?</em> Until now, analysts sitting with the commentary team wrote a database query on the spot and passed the answer back. In a big match that is 500 questions in five minutes; the manual route does not scale.</p>
+    <p>The feature: the user types a question in English, an <b>LLM turns it into SQL</b>, the system runs that SQL on the cricket database and shows the result. The analysts are no longer the bottleneck.</p>
+    <div class="case-out"><b>The question for this chapter:</b> which LLM should be the brain of this system? “Let’s just use the top model” is not an answer you can give a team — the choice needs reasoning behind it.</div>
+  </div>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 138" role="img" aria-label="The text-to-SQL pipeline: the user's question is combined with the database schema into a prompt, the LLM writes a SQL query, the query is run on the database, and the result is shown to the user">
+      <defs>
+        <marker id="a9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="mut"/>
+        </marker>
+        <marker id="a9b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="acc"/>
+        </marker>
+      </defs>
+      <rect x="10" y="20" width="120" height="56" rx="8" class="box"/>
+      <text x="70" y="44" text-anchor="middle" class="lbl">QUESTION</text>
+      <text x="70" y="61" text-anchor="middle" class="tiny">plain English</text>
+      <line x1="130" y1="48" x2="149" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <rect x="155" y="20" width="120" height="56" rx="8" class="box"/>
+      <text x="215" y="44" text-anchor="middle" class="lbl">BUILD PROMPT</text>
+      <text x="215" y="61" text-anchor="middle" class="tiny">+ database schema</text>
+      <line x1="275" y1="48" x2="294" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <rect x="300" y="20" width="120" height="56" rx="8" class="hotfill"/>
+      <text x="360" y="44" text-anchor="middle" class="lbl acc">LLM</text>
+      <text x="360" y="61" text-anchor="middle" class="tiny">writes the SQL</text>
+      <line x1="420" y1="48" x2="439" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <rect x="445" y="20" width="120" height="56" rx="8" class="box"/>
+      <text x="505" y="44" text-anchor="middle" class="lbl">DATABASE</text>
+      <text x="505" y="61" text-anchor="middle" class="tiny">runs the query</text>
+      <line x1="565" y1="48" x2="584" y2="48" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <rect x="590" y="20" width="120" height="56" rx="8" class="box"/>
+      <text x="650" y="44" text-anchor="middle" class="lbl">ANSWER</text>
+      <text x="650" y="61" text-anchor="middle" class="tiny">result table</text>
+      <text x="360" y="112" text-anchor="middle" class="tiny">the model’s only job is the SQL — everything else is ordinary code</text>
+    </svg>
+    <figcaption><b>Fig 9.1</b> — A text-to-SQL application. It is not RAG: no documents are retrieved, and the schema sent with every question is always the same.</figcaption>
+  </figure>
+
+  <p>The prompt that reaches the model has three parts:</p>
+  <div class="code">SYSTEM   You are a text-to-SQL generator. Given a database schema and a
+         question, return a single SQL query that answers it.
+         Use SQLite syntax. Return only the SQL query.
+
+SCHEMA   matches     — one row per IPL match: teams, venue, date, toss,
+                       winner, umpires …
+         deliveries  — one row per ball: batter, bowler, runs, extras,
+                       wicket, how out, fielder …
+
+QUESTION Which bowler has the best economy rate among bowlers who have
+         bowled at least 500 legal balls?</div>
+  <p class="small">Scope is narrowed to the IPL to keep things manageable. If your own column names are cryptic or domain-specific, add a paragraph describing each column under the schema — a longer prompt, and so more cost, but the model has what it needs. Code and data for the whole case study: <a class="inline" href="https://github.com/campusx-official/llm-sql-eval/tree/main">github.com/campusx-official/llm-sql-eval</a>.</p>
+
+  <p>The selection runs in three stages — the five steps of 9.6, folded into three.</p>
+  <figure class="diagram">
+    <svg viewBox="0 0 720 204" role="img" aria-label="Model selection in three stages: gather requirements, shortlist five to ten candidates from a leaderboard, then run a custom eval on the candidates to pick one model">
+      <rect x="12" y="16" width="216" height="174" rx="8" class="box"/>
+      <text x="120" y="38" text-anchor="middle" class="tiny acc">STAGE 1</text>
+      <text x="120" y="58" text-anchor="middle" class="lbl">REQUIREMENTS</text>
+      <text x="120" y="82" text-anchor="middle" class="tiny">understand the problem,</text>
+      <text x="120" y="96" text-anchor="middle" class="tiny">write down what you need</text>
+      <line x1="30" y1="114" x2="210" y2="114" class="ln"/>
+      <text x="120" y="136" text-anchor="middle" class="tiny acc">≤ ₹3 lakh a month</text>
+      <text x="120" y="150" text-anchor="middle" class="tiny acc">answers in 2–3 seconds</text>
+      <text x="120" y="164" text-anchor="middle" class="tiny acc">must not be wrong</text>
+      <line x1="228" y1="103" x2="246" y2="103" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+
+      <rect x="252" y="16" width="216" height="174" rx="8" class="box"/>
+      <text x="360" y="38" text-anchor="middle" class="tiny acc">STAGE 2</text>
+      <text x="360" y="58" text-anchor="middle" class="lbl">LEADERBOARD</text>
+      <text x="360" y="82" text-anchor="middle" class="tiny">filter the whole field down</text>
+      <text x="360" y="96" text-anchor="middle" class="tiny">to 5–10 candidates</text>
+      <line x1="270" y1="114" x2="450" y2="114" class="ln"/>
+      <text x="360" y="136" text-anchor="middle" class="tiny acc">146 models listed</text>
+      <text x="360" y="150" text-anchor="middle" class="tiny acc">→ drop the unaffordable</text>
+      <text x="360" y="164" text-anchor="middle" class="tiny acc">→ rank the rest → top 10</text>
+      <line x1="468" y1="103" x2="486" y2="103" class="lnacc" stroke-width="1.5" marker-end="url(#a9b)"/>
+
+      <rect x="492" y="16" width="216" height="174" rx="8" class="hotfill"/>
+      <text x="600" y="38" text-anchor="middle" class="tiny acc">STAGE 3</text>
+      <text x="600" y="58" text-anchor="middle" class="lbl acc">CUSTOM EVAL</text>
+      <text x="600" y="82" text-anchor="middle" class="tiny">run every candidate on</text>
+      <text x="600" y="96" text-anchor="middle" class="tiny">your data, your task</text>
+      <line x1="510" y1="114" x2="690" y2="114" class="ln"/>
+      <text x="600" y="136" text-anchor="middle" class="tiny acc">5 models × 20 questions</text>
+      <text x="600" y="150" text-anchor="middle" class="tiny acc">→ accuracy per model</text>
+      <text x="600" y="164" text-anchor="middle" class="tiny acc">→ one model chosen</text>
+    </svg>
+    <figcaption><b>Fig 9.2</b> — The selection funnel. Top half of each card: the stage. Bottom half: what it was in the case study.</figcaption>
+  </figure>
+
+  <h3 id="s9-8"><a class="h3-num" href="#s9-8">9.8</a>Stage 1 — gather the requirements</h3>
+  <p>Six questions, answered for this application. Several of them are really questions for your product or engineering manager.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>The requirement sheet</caption>
+    <thead><tr><th>Question</th><th>Answer here</th><th>Reasoning</th></tr></thead>
+    <tbody>
+      <tr><td>Task</td><td>Text-to-SQL</td><td>Generating SQL is a kind of <b>coding</b> task — this matters when choosing a leaderboard.</td></tr>
+      <tr><td>Cost ceiling</td><td><b>≤ ₹3 lakh / month</b></td><td>Why answer fans’ questions at all? It is a <b>retention play</b>: longer on the site → more ads seen → more revenue. The feature earns indirectly, so the budget is real but bounded. The figure itself comes from the business side.</td></tr>
+      <tr><td>Latency</td><td><b>2–3 seconds</b></td><td>The user is curious in the middle of a live match. Beyond about three seconds it feels broken. This rules out slow models and models that spend a long time reasoning. <span class="small">(A research assistant, by contrast, can take its time.)</span></td></tr>
+      <tr><td>Context window</td><td>Hardly matters</td><td>Each question is independent — no session, no multi-turn conversation — so the context never grows. A small-context model is fine. <span class="small">(It would matter for a chatbot or a coding assistant.)</span></td></tr>
+      <tr><td>Deployment</td><td>No constraint; public API preferred</td><td>No data here that must stay on your own servers. Public APIs also bring infrastructure and reliability you would struggle to match by self-hosting.</td></tr>
+      <tr><td>Correctness</td><td><b>Matters a lot</b></td><td>Cricket fans are finicky about records. One wrong answer becomes a screenshot on social media. The model cannot be wrong and cannot hallucinate.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>With this sheet in hand you no longer walk up to a leaderboard and point at the first row.</p>
+
+  <h3 id="s9-9"><a class="h3-num" href="#s9-9">9.9</a>Costing a model before you test it</h3>
+  <p>The ceiling is given to you; working out what a model will actually <em>cost</em> is your job as the AI engineer. Deployment cost is ignored — the feature slots into a website that is already running — so the bill is essentially the LLM’s, charged <b>per token</b>, with <b>separate rates for input and output</b> (output is always the dearer one).</p>
+  <p>You need three numbers:</p>
+  <div class="grid3">
+    <div class="tile"><div class="tile-k">Input per call</div><h4>≈ 400 tokens</h4><p>Paste the full prompt into a tokenizer: about 352. System text and schema never change; only the question does. Round up.</p></div>
+    <div class="tile"><div class="tile-k">Output per call</div><h4>≈ 100 tokens</h4><p>One SQL query. Lengths vary; take 100 as the average.</p></div>
+    <div class="tile"><div class="tile-k">Volume</div><h4>≈ 50,000 / day</h4><p>An estimate. Real traffic is <b>spiky</b> — it peaks on big-match days — but an average is what the budget needs.</p></div>
+  </div>
+  <div class="code">cost_per_query = input_tokens  × input_price  / 1,000,000
+               + output_tokens × output_price / 1,000,000
+
+monthly_cost   = cost_per_query × queries_per_day × 30 × (USD → INR)</div>
+  <aside class="callout">
+    <div class="callout-label">Worked number · can we afford the top model?</div>
+    <p>The top model is priced at <b>$10 per million input tokens</b> and <b>$50 per million output tokens</b>.</p>
+    <ul>
+      <li>Per query: 400 × 10 ⁄ 1M + 100 × 50 ⁄ 1M = 0.004 + 0.005 = <b>$0.009</b></li>
+      <li>Per day: 0.009 × 50,000 = <b>$450</b></li>
+      <li>Per month: 450 × 30 = <b>$13,500</b></li>
+      <li>In rupees, at ₹95 to the dollar: <mark>≈ ₹12.8 lakh a month</mark></li>
+    </ul>
+    <p>More than <b>four times</b> the ₹3 lakh ceiling. The best model in the world is out before a single test is run — you need something priced at roughly a quarter of it.</p>
+  </aside>
+
+  <h3 id="s9-10"><a class="h3-num" href="#s9-10">9.10</a>Prompt caching</h3>
+  <p>Look at the prompt again: the system text and the schema are <b>identical in all 50,000 calls of the day</b>. Only the question at the end changes — yet you pay the input price for the repeated part every time.</p>
+  <figure class="diagram">
+    <svg viewBox="0 0 720 132" role="img" aria-label="The prompt as a bar: a long first segment, the system instruction and schema of about 350 tokens, is identical on every call and can be cached; a short last segment, the question, changes on every call">
+      <rect x="20" y="30" width="590" height="46" rx="8" class="tinted"/>
+      <text x="315" y="50" text-anchor="middle" class="lbl">SYSTEM INSTRUCTION + SCHEMA</text>
+      <text x="315" y="66" text-anchor="middle" class="tiny">≈ 350 tokens · identical on every call</text>
+      <rect x="616" y="30" width="84" height="46" rx="8" class="hotfill"/>
+      <text x="658" y="50" text-anchor="middle" class="lbl acc">QUESTION</text>
+      <text x="658" y="66" text-anchor="middle" class="tiny">changes</text>
+      <text x="315" y="100" text-anchor="middle" class="tiny">cacheable prefix: pay the write price once,</text>
+      <text x="315" y="114" text-anchor="middle" class="tiny">then the much lower cache-hit price</text>
+      <text x="658" y="100" text-anchor="middle" class="tiny">normal</text>
+      <text x="658" y="114" text-anchor="middle" class="tiny">input price</text>
+    </svg>
+    <figcaption><b>Fig 9.3</b> — What prompt caching exploits: most of this prompt is the same every time.</figcaption>
+  </figure>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Prompt caching</div>
+    <p>The provider <b>stores the repeated portion of your prompt</b> on its servers, and charges far less for that portion on every later call that reuses it.</p>
+  </aside>
+  <div class="tbl-wrap">
+  <table>
+    <caption>The cache rates on the same model’s price list (per million tokens)</caption>
+    <thead><tr><th>Rate</th><th>Price</th><th>When you pay it</th></tr></thead>
+    <tbody>
+      <tr><td>Normal input</td><td>$10</td><td>No caching</td></tr>
+      <tr><td>5-minute cache write</td><td>$12.50</td><td>The <b>first</b> call — dearer than normal input, because the provider is also doing the caching work</td></tr>
+      <tr><td>1-hour cache write</td><td>$20</td><td>As above, but the cache lives for an hour</td></tr>
+      <tr><td>Cache hit / refresh</td><td><b>$1</b></td><td>Every later call that arrives while the cache is still alive</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The “5 minutes” and “1 hour” are the <b>refresh cycle</b>. With a 5-minute cache, a second question arriving after 3 minutes pays the $1 rate; one arriving after 7 minutes finds the cache gone and pays the write price again.</p>
+  <ul>
+    <li><b>High traffic → 5-minute cache.</b> At 50,000 questions a day something arrives within every five minutes. After a dead stretch at night, the first query of the morning pays one write and the rest pay hits.</li>
+    <li><b>Low traffic → 1-hour cache.</b> At around a thousand questions a day, gaps exceed five minutes; the longer window is worth its higher write price.</li>
+  </ul>
+  <p>On this workload it cuts the input side of the bill by close to 90%. Output tokens are untouched, so the total for the top model falls from ≈ ₹12.8 lakh to somewhere around ₹7–8 lakh a month <span class="small">(the lecture’s ballpark: ₹6–7 lakh)</span> — a large saving, still over budget.</p>
+  <aside class="callout warn">
+    <div class="callout-label">When it helps and when it does not</div>
+    <p>Caching pays off when a big chunk of the prompt <b>repeats</b> — as here. In a RAG chatbot most of the prompt is retrieved context, which changes with every query, so there is far less to cache.</p>
+  </aside>
+  <p class="small">Under the hood this rests on <b>KV caching</b>: the key and value vectors of the attention mechanism are what get stored and reused.</p>
+
+  <h3 id="s9-11"><a class="h3-num" href="#s9-11">9.11</a>Stage 2 — pick the leaderboard, then shortlist</h3>
+  <p><b>Which leaderboard?</b> The ideal is an application-specific one for the exact task, and text-to-SQL leaderboards do exist. None was usable:</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Why the text-to-SQL leaderboards were rejected</caption>
+    <thead><tr><th>Leaderboard</th><th>Problem</th></tr></thead>
+    <tbody>
+      <tr><td>BIRD-SQL</td><td><b>Not updated</b> — older models only. And many entries are models <b>fine-tuned on SQL data</b>, which you cannot simply call through an API.</td></tr>
+      <tr><td>Spider</td><td>Entries are whole <b>systems / harnesses</b> built by companies, not base models you could pick.</td></tr>
+      <tr><td>LiveSQLBench</td><td><b>Not updated</b> — a generation behind — and it was unclear what data the benchmarking used.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The fallback: use <mark>coding ability as a proxy</mark> for SQL-writing ability, since generating SQL is a coding activity. The leaderboard used was the coding board on <span class="mono">llm-stats.com</span> — a third party that aggregates many coding benchmarks into one rating. It listed 146 models, was fully up to date, and showed cost, speed and context window next to the rating.</p>
+
+  <aside class="callout def">
+    <div class="callout-label">Reading skill · Blended price</div>
+    <p>Many leaderboards show <b>one</b> price per model instead of separate input and output rates. It is a weighted average at a stated input-to-output ratio — always check which ratio.</p>
+    <ul class="def-breakdown">
+      <li><b>At 4 : 1</b>, for $10 in and $50 out: (4 × 10 + 1 × 50) ÷ 5 = <b>$18</b> per million tokens.</li>
+      <li><b>Ratios differ</b> between leaderboards — 4 : 1 on one, 8 : 1 on another.</li>
+      <li><b>Here it fits exactly:</b> this prompt is 400 tokens in, 100 out — also 4 : 1 — so the blended figure can be used as-is: 500 tokens × $18 ⁄ 1M = the same $0.009 per query.</li>
+    </ul>
+  </aside>
+  <p class="small">A shortcut that follows from it: for this workload, monthly cost in rupees ≈ blended price × 71,250 (500 ⁄ 1M × 50,000 × 30 × 95). A ₹3 lakh ceiling therefore means a blended price of about $4.2 or less.</p>
+
+  <p><b>The shortlisting recipe.</b> Download the table and turn the requirement sheet into arithmetic:</p>
+  <ol class="steps">
+    <li><b>Cost every model</b><span>Compute the monthly cost of each of the 146 models from its blended price.</span></li>
+    <li><b>Drop everything over the ceiling</b><span>A hard filter. Roughly 50–60 models survive; all the expensive ones go.</span></li>
+    <li><b>Normalise the two things you care about</b><span>Coding rating and output speed are on different scales. Min-max normalisation puts both in the range 0 to 1.</span></li>
+    <li><b>Combine them with weights</b><span>90% coding ability, 10% speed — see below for why.</span></li>
+    <li><b>Sort, take the top ten</b><span>Then remove anything you cannot actually use.</span></li>
+  </ol>
+  <div class="code">norm(x) = (x − min) / (max − min)            # every value lands in 0 … 1
+
+score   = 0.9 × norm(coding_rating)
+        + 0.1 × norm(output_speed)</div>
+  <aside class="callout">
+    <div class="callout-label">Why speed gets only 10%</div>
+    <p>The requirement says latency matters — so why so little weight? Because the output is <b>one short SQL query</b>, about 100 tokens. Even a slow model prints that in a second or so. If the output were a long essay, a slow model would take ages and speed would deserve far more. The weights are a judgement call for <em>this</em> application; 98 ⁄ 2 or 75 ⁄ 25 are defensible too.</p>
+  </aside>
+
+  <p>The resulting top ten, and what happened to each:</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>From ten candidates to five under test</caption>
+    <thead><tr><th>Model</th><th>Tested?</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>GPT-5.6 Terra</td><td><b>Yes</b></td><td>Top of the combined score. Expensive, but the lead candidate.</td></tr>
+      <tr><td>Kimi K3</td><td><b>Yes</b></td><td>Newly launched and all over the news — worth seeing for yourself.</td></tr>
+      <tr><td>Grok 4.5</td><td><b>Yes</b></td><td>A different provider; could surprise.</td></tr>
+      <tr><td>Claude Sonnet 5</td><td><b>Yes</b></td><td>The only model from its family that fits the budget.</td></tr>
+      <tr><td>MiniMax M3</td><td><b>Yes</b></td><td>A fraction of the cost and not far behind on score (about 0.76 against 0.9).</td></tr>
+      <tr><td>GPT-5.6 Luna</td><td>No</td><td>Same company as Terra, which should do at least as well.</td></tr>
+      <tr><td>GLM · Qwen</td><td>No</td><td>One low-cost open model is enough for the demo; MiniMax represents the group.</td></tr>
+      <tr><td>Gemini 3.6 Flash</td><td>No</td><td>Left out to keep the run short.</td></tr>
+      <tr><td>Muse Spark 1.1</td><td>No</td><td><b>Not available</b> — usable only in the US.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">The shortlist was prepared with a ₹5 lakh ceiling, which is why a model or two above ₹3 lakh (Terra among them) is still on it. Notice the pattern in the list: the big paid models are costly, while open models such as MiniMax, Qwen and GLM are far cheaper and not far behind — whether “not far behind” holds on your task is exactly what Stage 3 is for.</p>
+
+  <h3 id="s9-12"><a class="h3-num" href="#s9-12">9.12</a>Stage 3 — build the golden dataset</h3>
+  <p>A custom eval needs two things: <b>your data</b> (the company already has its database) and a <b>golden dataset</b> built on top of it.</p>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Golden dataset (text-to-SQL)</div>
+    <p>A list of <b>questions</b>, each paired with the <b>correct SQL query</b> — written by a data analyst and <b>validated by running it</b> on the database.</p>
+  </aside>
+  <div class="case">
+    <div class="case-tag"><b>Golden dataset</b> · one row</div>
+    <p><b>Question:</b> Which batter scored the most runs in the death overs (overs 15 to 19 inclusive)? Give the batter and the runs.</p>
+    <p><b>Gold SQL:</b> the analyst’s query — filter those overs, group by batter, sum the runs, take the top one.</p>
+    <p><b>Gold result:</b> the table that query returns, stored alongside.</p>
+    <div class="case-out"><b>Also stored:</b> a difficulty label, the expected number of rows, and whether <b>row order matters</b> for this question — the evaluator needs that last flag.</div>
+  </div>
+  <p>Building it well:</p>
+  <ul>
+    <li><b>Representative of real questions.</b> Mirror the distribution users will send — say 10 easy, 20 medium, 20 hard out of 50.</li>
+    <li><b>Varied in what it exercises.</b> Some questions needing joins, some sub-queries, some window functions — cover every kind of query you expect.</li>
+    <li><b>Made by hand, mostly.</b> If an LLM drafts it, you make sure every pair is right.</li>
+    <li><b>Sized with the bill in mind.</b> 50 to 500 questions is the working range. More is not free: humans are paid to write it, and every question is one LLM call <em>per candidate</em> — 5 models × 50 questions is 250 calls; at 500 questions it is 2,500.</li>
+    <li><b>Never finished.</b> After deployment, the questions the model fails on are added to it.</li>
+  </ul>
+  <aside class="callout">
+    <div class="callout-label">What the demo used</div>
+    <p>IPL ball-by-ball data from Kaggle, trimmed to the <b>2021–2024</b> seasons and loaded into SQLite as two tables, <span class="mono">matches</span> and <span class="mono">deliveries</span>. The golden dataset was <b>20 questions</b>, drafted by an LLM and deliberately all difficult — 8 labelled <em>hard</em>, 12 <em>brutal</em> — so that the models would separate. Every gold query was run once to confirm it executes: 20 of 20 passed.</p>
+    <p>That check proves the SQL <b>runs</b>, not that its answer is <b>right</b> — which is why a human still has to own the golden dataset. A real one would also include easy questions.</p>
+  </aside>
+
+  <h3 id="s9-13"><a class="h3-num" href="#s9-13">9.13</a>How to score: execution accuracy</h3>
+  <p>The model returns a SQL string; the golden dataset holds a SQL string. Comparing them <b>character by character is wrong</b>: many different queries produce the same result, so a perfectly correct query can look nothing like the analyst’s. Compare what the queries <em>return</em> instead.</p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 720 232" role="img" aria-label="Execution accuracy: for one question, the gold SQL from the golden dataset and the SQL generated by the model are both run on the database; the two result tables are compared; if they hold the same values the generated query is counted correct">
+      <rect x="10" y="88" width="110" height="56" rx="8" class="box"/>
+      <text x="65" y="112" text-anchor="middle" class="lbl">QUESTION</text>
+      <text x="65" y="129" text-anchor="middle" class="tiny">from golden set</text>
+      <path d="M120 106 L140 106 L140 58 L154 58" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <path d="M120 126 L140 126 L140 174 L154 174" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+
+      <rect x="160" y="30" width="130" height="56" rx="8" class="box"/>
+      <text x="225" y="54" text-anchor="middle" class="lbl">GOLD SQL</text>
+      <text x="225" y="71" text-anchor="middle" class="tiny">by the analyst</text>
+      <rect x="160" y="146" width="130" height="56" rx="8" class="hotfill"/>
+      <text x="225" y="170" text-anchor="middle" class="lbl acc">GENERATED SQL</text>
+      <text x="225" y="187" text-anchor="middle" class="tiny">model under test</text>
+      <line x1="290" y1="58" x2="324" y2="58" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <line x1="290" y1="174" x2="324" y2="174" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+
+      <rect x="330" y="30" width="110" height="172" rx="8" class="box"/>
+      <text x="385" y="112" text-anchor="middle" class="lbl">DATABASE</text>
+      <text x="385" y="129" text-anchor="middle" class="tiny">run both queries</text>
+      <line x1="440" y1="58" x2="474" y2="58" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <line x1="440" y1="174" x2="474" y2="174" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+
+      <rect x="480" y="30" width="110" height="56" rx="8" class="box"/>
+      <text x="535" y="54" text-anchor="middle" class="lbl">RESULT A</text>
+      <text x="535" y="71" text-anchor="middle" class="tiny">gold table</text>
+      <rect x="480" y="146" width="110" height="56" rx="8" class="box"/>
+      <text x="535" y="170" text-anchor="middle" class="lbl">RESULT B</text>
+      <text x="535" y="187" text-anchor="middle" class="tiny">generated table</text>
+      <path d="M590 58 L665 58 L665 82" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+      <path d="M590 174 L665 174 L665 150" class="ln" stroke-width="1.5" marker-end="url(#a9)"/>
+
+      <rect x="620" y="88" width="90" height="56" rx="8" class="tinted"/>
+      <text x="665" y="112" text-anchor="middle" class="lbl">COMPARE</text>
+      <text x="665" y="129" text-anchor="middle" class="tiny">equal → 1</text>
+      <text x="360" y="224" text-anchor="middle" class="tiny">same table = correct query, however differently the SQL is written</text>
+    </svg>
+    <figcaption><b>Fig 9.4</b> — Execution accuracy. Two queries, one database, two result tables; the tables are compared, never the SQL text.</figcaption>
+  </figure>
+
+  <aside class="callout def">
+    <div class="callout-label">Definition · Execution accuracy</div>
+    <p>The share of questions for which the <b>generated query, when executed, returns the same result</b> as the gold query.</p>
+  </aside>
+  <p>“The same result” needs a careful definition, or correct answers get marked wrong. The evaluator’s rules, in order:</p>
+  <ol class="steps">
+    <li><b>The query must run</b><span>If the generated SQL throws an error, it is wrong — recorded separately as a <span class="mono">sql_error</span>, since a syntax failure is a different problem from a wrong answer.</span></li>
+    <li><b>Row counts must match</b><span>Asked for the top five batters and got three rows? Wrong, no further checks.</span></li>
+    <li><b>Canonicalise the values</b><span>Treat <span class="mono">2.0</span> and <span class="mono">2</span> as equal; round floats so that tiny decimal noise does not count as a difference; trim strings; treat every kind of “empty” alike.</span></li>
+    <li><b>Ignore column names</b><span>One query calls the column <span class="mono">runs</span>, another <span class="mono">total_runs</span>. Only the data is compared.</span></li>
+    <li><b>Sort the rows — unless order is the point</b><span>The same rows can come back in a different order, so both tables are sorted before comparing. If the question is flagged order-sensitive (it asks for a ranking), skip the sort: a match then proves the model ordered correctly too.</span></li>
+    <li><b>Allow one extra or missing column</b><span>For “who scored the most?” one model returns the name, another the name and the count. Both are right — so a one-column difference passes if the smaller table’s values all appear in the larger one, row by row.</span></li>
+  </ol>
+  <p class="small">A reference-based, code-based eval in the terms of Chapter 05: there is a golden answer, and the check is deterministic — no judge model involved.</p>
+
+  <h3 id="s9-14"><a class="h3-num" href="#s9-14">9.14</a>Running the eval</h3>
+  <p>The build order, so the whole thing can be reconstructed from memory:</p>
+  <ol class="steps">
+    <li><b>Get the data into a database</b><span>CSV files → SQLite. A real company already has this.</span></li>
+    <li><b>Extract the schema to a file</b><span>Tables, columns, types. It goes into the prompt on every call.</span></li>
+    <li><b>Write and validate the golden dataset</b><span>Questions, gold SQL, gold results — 9.12.</span></li>
+    <li><b>Smoke-test the flow</b><span>One question, one model, print the SQL that comes back. The model used here was not even a candidate; the point is only to confirm the prompt and plumbing work before spending money on the full run.</span></li>
+    <li><b>List the candidate models</b><span>A plain list of names. Adding a sixth model to the eval means adding one line.</span></li>
+    <li><b>Build the evaluator</b><span>The table-comparison rules — 9.13.</span></li>
+    <li><b>Orchestrate</b><span>Loop over models and questions, log every verdict, report accuracy per model.</span></li>
+  </ol>
+  <div class="code">for model in candidates:
+    correct = 0
+    for row in golden_dataset:
+        sql    = model.generate(system + schema + row.question)   # temp 0
+        sql    = strip_markdown(sql)        # models wrap SQL in ``` fences
+        table  = run_on_db(sql)             # None if the SQL errors out
+        ok     = same_result(table, row.gold_result, row.order_sensitive)
+        log(model, row.id, ok, sql)
+        correct += ok
+    accuracy[model] = correct / len(golden_dataset)</div>
+  <p>It is the benchmark loop of Fig 8.2 with your own dataset and your own scoring rule — plus an outer loop over candidates.</p>
+  <aside class="callout">
+    <div class="callout-label">One API for five providers</div>
+    <p>The candidates come from five different companies, each with its own API. Rather than write five integrations, the run goes through <b>OpenRouter</b> — one service, one key, every model addressed by a short identifier. The whole five-model run cost about $5 (≈ ₹500).</p>
+  </aside>
+
+  <h3 id="s9-15"><a class="h3-num" href="#s9-15">9.15</a>The results, and the decision</h3>
+  <figure class="diagram">
+    <svg viewBox="0 0 720 250" role="img" aria-label="Bar chart of execution accuracy on the 20-question golden dataset: Grok 4.5 scored 18 of 20, 90 percent; Claude Sonnet 5 scored 17 of 20, 85 percent; GPT-5.6 Terra 16 of 20, 80 percent; MiniMax M3 13 of 20, 65 percent; Kimi K3 11 of 20, 55 percent">
+      <line x1="380" y1="24" x2="380" y2="218" class="ln" stroke-dasharray="3 4"/>
+      <line x1="600" y1="210" x2="600" y2="218" class="ln" stroke-width="1.5"/>
+      <line x1="160" y1="24" x2="160" y2="218" class="ln" stroke-width="1.5"/>
+      <text x="160" y="236" text-anchor="middle" class="tiny">0</text>
+      <text x="380" y="236" text-anchor="middle" class="tiny">50%</text>
+      <text x="600" y="236" text-anchor="middle" class="tiny">100%</text>
+
+      <text x="148" y="51" text-anchor="end" class="lbl">GROK 4.5</text>
+      <rect x="160" y="36" width="396" height="22" rx="3" class="acc"/>
+      <text x="564" y="51" class="ttl">18/20 · 90%</text>
+
+      <text x="148" y="89" text-anchor="end" class="lbl">CLAUDE SONNET 5</text>
+      <rect x="160" y="74" width="374" height="22" rx="3" class="acc"/>
+      <text x="542" y="89" class="ttl">17/20 · 85%</text>
+
+      <text x="148" y="127" text-anchor="end" class="lbl">GPT-5.6 TERRA</text>
+      <rect x="160" y="112" width="352" height="22" rx="3" class="acc" fill-opacity=".42"/>
+      <text x="520" y="127" class="lbl">16/20 · 80%</text>
+
+      <text x="148" y="165" text-anchor="end" class="lbl">MINIMAX M3</text>
+      <rect x="160" y="150" width="286" height="22" rx="3" class="acc" fill-opacity=".42"/>
+      <text x="454" y="165" class="lbl">13/20 · 65%</text>
+
+      <text x="148" y="203" text-anchor="end" class="lbl">KIMI K3</text>
+      <rect x="160" y="188" width="242" height="22" rx="3" class="acc" fill-opacity=".42"/>
+      <text x="410" y="203" class="lbl">11/20 · 55%</text>
+    </svg>
+    <figcaption><b>Fig 9.5</b> — Execution accuracy on the 20-question golden dataset. The two solid bars are the finalists.</figcaption>
+  </figure>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Reading the scoreboard against the requirement sheet</caption>
+    <thead><tr><th>Model</th><th>Accuracy</th><th>How it failed</th><th>Cost &amp; speed</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Grok 4.5</td><td>90%</td><td>2 wrong results, both on <em>brutal</em> questions. No SQL errors.</td><td>≈ ₹2.5 lakh / month. Fast.</td><td><b>Finalist</b></td></tr>
+      <tr><td>Claude Sonnet 5</td><td>85%</td><td>3 wrong results, all <em>brutal</em>. No SQL errors.</td><td>≈ ₹2.84 lakh / month. The fastest in the run.</td><td><b>Finalist</b></td></tr>
+      <tr><td>GPT-5.6 Terra</td><td>80%</td><td>4 wrong results. No SQL errors.</td><td>About twice Grok’s cost — over the ceiling.</td><td>Out: costs more, scores less</td></tr>
+      <tr><td>MiniMax M3</td><td>65%</td><td>3 wrong results + <b>4 SQL errors</b>.</td><td>A fraction of the others.</td><td>Out: correctness is the top requirement</td></tr>
+      <tr><td>Kimi K3</td><td>55%</td><td>3 wrong results + <b>6 SQL errors</b>.</td><td>Well above Grok’s cost. Very slow — a large reasoning model.</td><td>Out on accuracy <em>and</em> latency</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><b>Choosing between the finalists.</b> One question apart on accuracy and close on cost — the eval has narrowed the field, not ended the discussion. The leaderboard listed Grok as the faster of the two; in the actual run Sonnet was faster. What tips it is something no score captures: <b>how dependable the provider’s API is</b> for a feature that must stay up during live matches. The lean was toward <mark>Claude Sonnet 5</mark> on that ground, with Grok 4.5 a defensible choice. When a team cannot agree, it votes.</p>
+  <p class="small">Who decides? The AI engineers run all of this — it is technical work — and hand a report to the product or project manager, who takes the final call largely on that input.</p>
+
+  <aside class="callout warn">
+    <div class="callout-label">The lesson, seen live</div>
+    <p>The most talked-about model of the week — on every leaderboard and in every headline — finished <b>last</b> on this task, and was the slowest. A top ranking does not guarantee performance on <em>your</em> task. That is the whole reason Stage 3 exists.</p>
+  </aside>
+
+  <p><b>Caveats to state alongside any result like this.</b></p>
+  <ul>
+    <li><b>20 questions is too few.</b> Each question is worth 5 points, so one answer moves a model a full place. A real golden dataset should be larger.</li>
+    <li><b>Run it more than once.</b> Calls are independent, so repeat the whole eval — five runs, say — and average. If the same model still leads, you have statistical evidence instead of one lucky run. It costs more.</li>
+    <li><b>Measure latency too.</b> Speed here was judged by eye. Since latency is on the requirement sheet, the eval should record time per query.</li>
+    <li><b>How much accuracy is worth paying for depends on the stakes.</b> In a medical application you pay the premium to be right. In a consumer application where an occasional miss is tolerable, the cheaper model a few points behind may be the better choice.</li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Requirements first, then a leaderboard to filter, then your own eval to decide. The leaderboard tells you who is worth testing; only your data, your task and your scoring rule tell you who to build on.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
 <footer class="colophon">
   <div class="fin">— to be <i>continued</i> —</div>
-  <p>Compiled from Lectures 01–08 of the CampusX “LLM Evals” series · For personal revision<br>
+  <p>Compiled from the CampusX “LLM Evals” series · For personal revision<br>
   The series is ongoing — new chapters will be appended as further videos are covered.</p>
 </footer>
 
