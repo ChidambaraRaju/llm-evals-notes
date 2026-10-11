@@ -15,6 +15,8 @@ The notes are a single self-contained HTML page — no build step, no dependenci
 7. Evaluating the Model Itself
 8. Benchmarks: How They Work, and When Not to Trust Them
 9. Leaderboards and Custom Evals: Choosing the Model
+10. How Do You Evaluate a RAG App? The Full Framework
+11. Testing the Retriever: Contextual Recall and Precision
 
 ## How to view
 

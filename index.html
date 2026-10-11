@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Evaluations — Revision Notes · CampusX Series</title>
-<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Nine chapters so far.">
+<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Eleven chapters so far.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&display=swap" rel="stylesheet">
@@ -423,10 +423,12 @@ svg .lnacc{stroke:var(--accent);fill:none}
     <li><a href="#ch7"><span class="toc-num">07</span>Model Evals &amp; the 8 Capabilities</a></li>
     <li><a href="#ch8"><span class="toc-num">08</span>Benchmarks &amp; Their Pitfalls</a></li>
     <li><a href="#ch9"><span class="toc-num">09</span>Leaderboards &amp; Choosing a Model</a></li>
+    <li><a href="#ch10"><span class="toc-num">10</span>Evaluating a RAG App: The Framework</a></li>
+    <li><a href="#ch11"><span class="toc-num">11</span>Testing the Retriever</a></li>
   </ol>
   <div class="sidebar-foot">
     Series in progress —<br>
-    <b>9</b> chapters covered so far.<br>
+    <b>11</b> chapters covered so far.<br>
     New lectures → new chapters.
     <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
   </div>
@@ -440,7 +442,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
   <p class="lede">Everything the series has taught so far about testing large language models and the applications built on top of them — distilled into one reference, organised chapter by chapter, for fast revision.</p>
   <div class="mast-meta">
     <div><div class="k">Source</div><div class="v">CampusX · “LLM Evals” playlist (Hindi)</div></div>
-    <div><div class="k">Coverage</div><div class="v">9 chapters · concepts, workflows &amp; case studies</div></div>
+    <div><div class="k">Coverage</div><div class="v">11 chapters · concepts, workflows &amp; case studies</div></div>
     <div><div class="k">Format</div><div class="v">Short notes · definitions · tables · worked numbers</div></div>
   </div>
   <div class="banner">
@@ -1559,6 +1561,326 @@ score   = 0.9 × norm(coding_rating) + 0.1 × norm(output_speed)</div>
   <div class="takeaway">
     <div class="tk-label">Takeaway</div>
     <p>Requirements first, then a leaderboard to filter, then your own eval to decide. The leaderboard tells you who is worth testing; only your data and your scoring rule tell you who to build on.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 10                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch10">
+  <header class="ch-head">
+    <div class="ch-num">10</div>
+    <div class="ch-kick"><b>RAG evals · the framework</b></div>
+    <h2>How Do You Evaluate a RAG App? The Full Framework</h2>
+    <p class="ch-lede">Not a list of metrics but a sequence: an eval suite at three levels, regression testing on every change, then online evals that feed failures back.</p>
+  </header>
+
+  <h3 id="s10-1"><a class="h3-num" href="#s10-1">10.1</a>The answer in one view</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Stage</th><th>What is tested</th><th>Metrics</th></tr></thead>
+    <tbody>
+      <tr><td><b>1 · Component</b></td><td>Retriever and generator, each in isolation</td><td>Recall, precision · faithfulness, answer relevance, citation accuracy</td></tr>
+      <tr><td><b>2 · Pipeline</b></td><td>The two wired together</td><td><b>RAG triad</b></td></tr>
+      <tr><td><b>3 · Application</b></td><td>The whole product: is it shippable?</td><td>Quality (correctness, completeness, style) · safety · ops</td></tr>
+      <tr><td><b>Regression testing</b></td><td>New version vs baseline</td><td>No new metrics — re-run stages 1–3</td></tr>
+      <tr><td><b>4 · Online</b></td><td>Live traffic, no golden answer</td><td>Captured signals · computed signals · drift</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Eval suite</div>
+    <p>All the offline evals of stages 1–3 taken together — the application’s <b>testing suite</b>. You never run one eval; you run all of them.</p>
+  </aside>
+  <p><mark>Build and evaluate together</mark>, as software is tested at function, feature and application level — not “build everything, then test”.</p>
+  <p class="small"><b>Case study for the next chapters:</b> a CampusX doubt solver — a RAG chatbot over this course’s lecture transcripts that answers a doubt and cites the session it came from.</p>
+
+  <h3 id="s10-2"><a class="h3-num" href="#s10-2">10.2</a>Level 1 — components in isolation</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th></th><th>Retriever</th><th>Generator</th></tr></thead>
+    <tbody>
+      <tr><td>Question asked</td><td>Given a query, does it fetch the right chunks?</td><td>Given a question and context, is the answer good?</td></tr>
+      <tr><td>Metrics</td><td><b>Recall</b> — of all the right documents, how many did I fetch?<br><b>Precision</b> — of those I fetched, how many were useful?</td><td><b>Faithfulness</b> — answer comes only from the given context, no hallucination<br><b>Answer relevance</b> — answer addresses the question<br><b>Citation accuracy</b> — the cited source is the right one</td></tr>
+      <tr><td>Input</td><td>Queries with golden relevant-document labels</td><td><b>Hand-fed</b> question + golden context — not connected to the retriever</td></tr>
+      <tr><td>Method</td><td>Reference-based · programmatic</td><td>Reference-free · LLM judge</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small"><b>Build order:</b> build retriever → evaluate it → build generator → evaluate it. Move on only when each passes alone.</p>
+
+  <h3 id="s10-3"><a class="h3-num" href="#s10-3">10.3</a>Level 2 — the pipeline and the RAG triad</h3>
+  <p>Connect retriever and generator, then test the hand-off. Three things exist — <b>question</b>, <b>retrieved context</b>, <b>answer</b> — and each pair has a metric.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>The RAG triad</caption>
+    <thead><tr><th>Pair</th><th>Metric</th><th>Asks</th></tr></thead>
+    <tbody>
+      <tr><td>Question ↔ context</td><td><b>Context relevance</b></td><td>Is the fetched context relevant to the question?</td></tr>
+      <tr><td>Context ↔ answer</td><td><b>Faithfulness</b></td><td>Is the answer grounded in the context, or hallucinated?</td></tr>
+      <tr><td>Question ↔ answer</td><td><b>Answer relevance</b></td><td>Does the answer address the question?</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">Faithfulness and answer relevance repeat from level 1, but now on the <b>real retrieved context</b>, end to end.</p>
+
+  <h3 id="s10-4"><a class="h3-num" href="#s10-4">10.4</a>Level 3 — the application</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Group</th><th>Metric</th><th>Asks</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="3">Quality</td><td><b>Correctness</b></td><td>Is the answer right, against the golden answer?</td></tr>
+      <tr><td><b>Completeness</b></td><td>Does it cover every part of the question? A two-part question with one part answered correctly is correct but <b>not complete</b>.</td></tr>
+      <tr><td><b>Style</b></td><td>Does it explain the way the product should (here, like a CampusX teacher)? Scored with a tone rubric, e.g. G-Eval.</td></tr>
+      <tr><td>Safety</td><td>Toxicity · PII leakage · jailbreak</td><td>Can the app be made to say or leak something it should not?</td></tr>
+      <tr><td>Ops</td><td>Latency · cost per query · tokens</td><td>Is it fast and cheap enough to run?</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">Some of these evals need a golden dataset (recall, correctness); others do not (faithfulness, toxicity).</p>
+
+  <h3 id="s10-5"><a class="h3-num" href="#s10-5">10.5</a>The tool: DeepEval</h3>
+  <ul>
+    <li>Most of these metrics ship ready-made: answer relevancy, faithfulness, contextual precision / recall / relevancy, toxicity, PII leakage.</li>
+    <li>Syntax is modelled on <span class="mono">pytest</span>, so evals read like software tests.</li>
+    <li><b>Why not RAGAS:</b> both work for RAG, but DeepEval is broader — agents, multi-turn chatbots, image apps.</li>
+  </ul>
+
+  <h3 id="s10-6"><a class="h3-num" href="#s10-6">10.6</a>Regression testing</h3>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Regression testing</div>
+    <p>The act of <b>running the whole eval suite</b> on a new version to answer: is version 2 objectively <b>not worse</b> than version 1? An activity, not a new set of metrics.</p>
+  </aside>
+  <div class="code">project/
+├── src/                  # the app
+│   ├── retriever.py
+│   ├── generator.py
+│   └── rag_pipeline.py
+├── evals/                # the eval suite
+│   ├── eval_retriever.py
+│   ├── eval_generator.py
+│   ├── eval_pipeline.py
+│   ├── eval_application.py
+│   ├── eval_safety.py
+│   └── eval_ops.py
+└── run_evals.py          # runs every eval, writes one report</div>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Three levels of maturity</caption>
+    <thead><tr><th>Level</th><th>How it works</th></tr></thead>
+    <tbody>
+      <tr><td><b>Basic</b></td><td>Run <span class="mono">run_evals.py</span> after each change and compare the report with the last one by hand</td></tr>
+      <tr><td><b>+ Experiment tracking</b></td><td>Log each run’s <b>config</b> (chunk size, overlap, temperature, embedding model) with its <b>metrics</b>; the first run is the <b>baseline</b>; compare runs on a dashboard. Tools: MLflow, Weights &amp; Biases, Confident AI.</td></tr>
+      <tr><td><b>+ CI gate</b></td><td>On every <span class="mono">git push</span> (e.g. GitHub Actions) the suite re-runs. Worse than baseline by more than a threshold → deployment is <b>blocked</b>. Better → deploy, and the new numbers become the baseline.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>Baseline run: recall 0.82, precision 0.68. You raise the chunk size and cut the overlap, push, and the suite re-runs. With a threshold of 3 points, recall below 0.79 means the software has <b>regressed</b> and the deploy is paused.</p>
+  </aside>
+  <p class="small">No tool is the standard for LLMs yet, the way MLflow is for ML — learn the concept, not the tool.</p>
+
+  <h3 id="s10-7"><a class="h3-num" href="#s10-7">10.7</a>Level 4 — online evals</h3>
+  <p>Evaluation does not stop at deployment. Add <b>tracing / observability</b> code (LangSmith, Langfuse, Confident AI) so every live interaction is recorded.</p>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>What</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td><b>Captured</b> signals</td><td>Just logged: latency, cost, tokens, 👍/👎, escalations</td></tr>
+      <tr><td><b>Computed</b> signals</td><td>An LLM judge scores a <b>sample</b> of traffic on reference-free metrics: faithfulness, answer relevance</td></tr>
+      <tr><td>Correctness</td><td>No golden answer, so <b>by proxy</b>: thumbs-down and re-asks stand in</td></tr>
+      <tr><td><b>Drift</b></td><td>Score distribution vs baseline. Faithfulness sliding over the last 8 hours of a 24-hour graph → alert → fix.</td></tr>
+      <tr><td><b>Self-improving loop</b></td><td>Conversations where the app misbehaved are added to the offline golden dataset, so the next version is tested on them</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s10-8"><a class="h3-num" href="#s10-8">10.8</a>The interview answer</h3>
+  <ol>
+    <li>I build an <b>eval suite</b> at three levels.</li>
+    <li><b>Component:</b> retriever on recall and precision; generator in isolation on faithfulness, answer relevance and citation accuracy.</li>
+    <li><b>Pipeline:</b> the RAG triad — context relevance, faithfulness, answer relevance.</li>
+    <li><b>Application:</b> correctness, completeness, style; then safety and ops.</li>
+    <li><b>Regression testing:</b> re-run the suite on every change against a baseline — by hand, with experiment tracking, or as a CI gate.</li>
+    <li><b>Deploy</b>, then <b>online evals</b>: captured and computed signals, drift.</li>
+    <li>Production failures go back into the <b>offline dataset</b>.</li>
+  </ol>
+  <aside class="callout warn">
+    <div class="callout-label">The line to remember</div>
+    <p>Naming three or four metrics (“recall, precision, answer relevance”) is the weak answer. <b>Answer with the framework</b>, and place each metric inside it.</p>
+  </aside>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Evaluate a RAG app the way software is tested: components, then the pipeline, then the whole application, re-run as a regression suite on every change. After release, keep watching live traffic and turn its failures into new offline test cases.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 11                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch11">
+  <header class="ch-head">
+    <div class="ch-num">11</div>
+    <div class="ch-kick"><b>RAG evals · component level</b></div>
+    <h2>Testing the Retriever: Contextual Recall and Precision</h2>
+    <p class="ch-lede">A retriever fails in two ways, each with its own metric. Score both with an LLM judge against ideal answers, not chunk IDs, then tune and re-run.</p>
+  </header>
+
+  <h3 id="s11-1"><a class="h3-num" href="#s11-1">11.1</a>Two failure modes, two metrics</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Failure mode</th><th>Example <span class="small">(needed: chunks 1, 15, 13)</span></th><th>Metric</th></tr></thead>
+    <tbody>
+      <tr><td><b>Miss</b> — the right context is not fetched</td><td>Returns 27, 28, 29</td><td><b>Recall</b> = relevant fetched ÷ all relevant that exist</td></tr>
+      <tr><td><b>Noise</b> — right context arrives with junk</td><td>Returns 1, 15, 27, 28, 29</td><td><b>Precision</b> = relevant fetched ÷ all fetched</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <ul>
+    <li>Ideal: both close to 1.</li>
+    <li><b>K is the trade-off:</b> raising K (5 → 10) almost always lifts recall, and drags precision down because more noise comes along.</li>
+    <li>Both are <b>reference-based</b>: you must state what “correct” looks like for every query, so a golden dataset is needed.</li>
+  </ul>
+
+  <h3 id="s11-2"><a class="h3-num" href="#s11-2">11.2</a>Why a chunk-ID golden set breaks</h3>
+  <p>The textbook golden set is <span class="mono">question → relevant chunk IDs</span>, scored in code (Recall@K, Precision@K). Two problems:</p>
+  <ul>
+    <li><b>Labour</b> — someone reads ~800 chunks for each of 50 questions.</li>
+    <li><b>Fragility</b> — change the chunk size or overlap and every chunk changes, so <mark>the whole golden set is void</mark> and must be rebuilt on each tuning step.</li>
+  </ul>
+  <p class="small"><b>When it still works:</b> cleanly separated documents and chunking you never touch. Not here — one topic is spread across several lectures, so chunking will be tuned.</p>
+
+  <h3 id="s11-3"><a class="h3-num" href="#s11-3">11.3</a>The fix: question → ideal answer</h3>
+  <aside class="callout def">
+    <div class="callout-label">Definition · Ideal answer</div>
+    <p>The answer <b>as your knowledge base gives it</b> — built from the relevant chunks, not from Google. It may not even be the textbook-correct answer.</p>
+    <ul class="def-breakdown">
+      <li><b>Survives re-chunking:</b> the information moves between chunks; the ideal answer stays the same.</li>
+      <li><b>Cost:</b> scoring now needs an <b>LLM judge</b> — no longer a programmatic eval.</li>
+      <li><b>Write it as atomic claims</b>, so the judge can split it cleanly.</li>
+    </ul>
+  </aside>
+
+  <h3 id="s11-4"><a class="h3-num" href="#s11-4">11.4</a>Contextual recall</h3>
+  <div class="code">Contextual Recall = attributable statements / total statements in the ideal answer</div>
+  <ol>
+    <li>The judge breaks the <b>ideal answer</b> into claims.</li>
+    <li>For each claim, it checks whether <b>any retrieved chunk</b> supports it.</li>
+    <li>Score per question; average over the dataset.</li>
+  </ol>
+  <aside class="callout">
+    <div class="callout-label">Worked numbers</div>
+    <p>“What is regression testing?” → 3 claims, found in chunks 72, 89 and 100 of the five fetched → 3/3 = <b>1.0</b>.<br>
+    “What is the RAG triad?” → 2 claims, only one found → 1/2 = <b>0.5</b>.</p>
+  </aside>
+
+  <h3 id="s11-5"><a class="h3-num" href="#s11-5">11.5</a>Contextual precision</h3>
+  <p>The judge sees the question, the ideal answer and <b>one chunk at a time</b>, and answers: does this chunk help produce that answer — yes or no, with a reason. Plain precision would then be yes ÷ K, but that ignores order.</p>
+  <div class="code">Contextual Precision = (1 / R) × Σ<sub>k=1..n</sub> (relevant in top k / k) × r<sub>k</sub>
+
+R   = number of relevant chunks
+r<sub>k</sub> = 1 if the chunk at rank k is relevant, else 0</div>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Same 2 relevant chunks out of 5 — plain precision is 0.4 for both</caption>
+    <thead><tr><th>Case</th><th>Ranking</th><th>Calculation</th><th>Score</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>✓ ✓ ✗ ✗ ✗</td><td>(1/1 + 2/2) ÷ 2</td><td><b>1.0</b></td></tr>
+      <tr><td>B</td><td>✗ ✗ ✗ ✓ ✓</td><td>(1/4 + 2/5) ÷ 2</td><td><b>0.325</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>It is <mark>rank-aware</mark>: relevant chunks at the top score higher — which is why a re-ranker raises it.</p>
+
+  <h3 id="s11-6"><a class="h3-num" href="#s11-6">11.6</a>Building the golden dataset</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Way</th><th>How</th><th>Trade-off</th></tr></thead>
+    <tbody>
+      <tr><td><b>Hand-authored</b></td><td>Someone who knows the data writes questions and answers</td><td>Best quality; does not scale</td></tr>
+      <tr><td><b>LLM-assisted draft</b></td><td>Give the documents to an LLM, ask for question + ideal answer, a few at a time</td><td>Cheap and fast; <b>human review is mandatory</b> — remove anything the documents never said</td></tr>
+      <tr><td><b>DeepEval Synthesizer</b></td><td>Generates goldens from documents or chunks</td><td>Automatic, but questions came out unnatural and off-focus here; still needs review</td></tr>
+      <tr><td><b>Production logs</b></td><td>Promote interactions with positive signals (thumbs-up)</td><td>Real user language; not available on day one</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">Used here: LLM-assisted, 15 questions, each checked by hand. A good entry reads like something a student would actually ask.</p>
+  <div class="code">from deepeval.synthesizer import Synthesizer
+
+synthesizer = Synthesizer(model="gpt-4.1")
+goldens = synthesizer.generate_goldens_from_docs(
+    document_paths=["data/session_01.txt"],
+    include_expected_output=True,        # each golden: input, expected_output, context
+)
+synthesizer.save_as(file_type="json", directory="./goldens", file_name="retriever_goldens")</div>
+
+  <h3 id="s11-7"><a class="h3-num" href="#s11-7">11.7</a>The DeepEval pattern</h3>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Piece</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td><span class="mono">LLMTestCase</span></td><td><b>One row</b> of the golden dataset: <span class="mono">input</span>, <span class="mono">expected_output</span>, <span class="mono">retrieval_context</span>, <span class="mono">actual_output</span></td></tr>
+      <tr><td>Metric</td><td>What to score. Settings: <span class="mono">model</span> (the judge), <span class="mono">threshold</span> (below it the test case fails), <span class="mono">include_reason</span></td></tr>
+      <tr><td><span class="mono">evaluate()</span></td><td>Runs every metric on every test case and reports scores, pass/fail and reasons</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="code">from deepeval import evaluate
+from deepeval.metrics import ContextualRecallMetric, ContextualPrecisionMetric
+from deepeval.test_case import LLMTestCase
+
+test_cases = []
+for row in goldens:                                # question + ideal answer
+    chunks = retriever.invoke(row["question"])     # run the real retriever
+    test_cases.append(LLMTestCase(
+        input=row["question"],
+        expected_output=row["ideal_answer"],
+        retrieval_context=[c.page_content for c in chunks],
+        actual_output="generator not evaluated",   # required field; no generator yet
+    ))
+
+metrics = [
+    ContextualRecallMetric(threshold=0.7, model="gpt-4.1", include_reason=True),
+    ContextualPrecisionMetric(threshold=0.7, model="gpt-4.1", include_reason=True),
+]
+evaluate(test_cases=test_cases, metrics=metrics)</div>
+  <p class="small">Read the <b>reasons</b> on the failed test cases — they say what kind of question the retriever gets wrong.</p>
+
+  <h3 id="s11-8"><a class="h3-num" href="#s11-8">11.8</a>Evaluate, change one thing, re-run</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>15 goldens · threshold 0.7 · K = 5</caption>
+    <thead><tr><th>Change</th><th>Recall</th><th>Precision</th><th>Failed</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline — chunk 750 / overlap 100, small embedding model</td><td>0.80</td><td>0.80</td><td>5</td></tr>
+      <tr><td>Chunk 1000 / overlap 150</td><td><b>0.97</b></td><td>0.83</td><td>3</td></tr>
+      <tr><td>+ re-ranker</td><td>0.92</td><td><b>0.85</b></td><td>2</td></tr>
+      <tr><td>+ large embedding model</td><td><b>0.99</b></td><td>0.85</td><td>3</td></tr>
+      <tr><td>K = 3</td><td>—</td><td>0.84</td><td>no gain</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Lever</th><th>Mostly moves</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Chunk size / overlap</td><td>Recall</td><td>Rebuild the vector store</td></tr>
+      <tr><td>Embedding model</td><td>Recall</td><td>Costs more; rebuild the vector store</td></tr>
+      <tr><td>Re-ranker</td><td>Precision</td><td>Moves relevant chunks up; a better re-ranker helps more</td></tr>
+      <tr><td>K</td><td>Both, in opposite directions</td><td>No rebuild needed</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout warn">
+    <div class="callout-label">Reading the numbers</div>
+    <p>With only <b>15 rows</b>, the same settings give slightly different scores on each run. A one- or two-point move is noise, not an improvement.</p>
+  </aside>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Score a retriever on contextual recall (did it fetch what the ideal answer needs?) and contextual precision (is the useful context ranked on top?), using a golden set of questions and ideal answers that survives re-chunking. Then change one setting at a time and let the numbers decide.</p>
   </div>
 </section>
 
