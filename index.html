@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Evaluations — Revision Notes · CampusX Series</title>
-<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Eleven chapters so far.">
+<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Twelve chapters so far.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&display=swap" rel="stylesheet">
@@ -425,10 +425,11 @@ svg .lnacc{stroke:var(--accent);fill:none}
     <li><a href="#ch9"><span class="toc-num">09</span>Leaderboards &amp; Choosing a Model</a></li>
     <li><a href="#ch10"><span class="toc-num">10</span>Evaluating a RAG App: The Framework</a></li>
     <li><a href="#ch11"><span class="toc-num">11</span>Testing the Retriever</a></li>
+    <li><a href="#ch12"><span class="toc-num">12</span>Testing the Generator &amp; the RAG Triad</a></li>
   </ol>
   <div class="sidebar-foot">
     Series in progress —<br>
-    <b>11</b> chapters covered so far.<br>
+    <b>12</b> chapters covered so far.<br>
     New lectures → new chapters.
     <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
   </div>
@@ -442,7 +443,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
   <p class="lede">Everything the series has taught so far about testing large language models and the applications built on top of them — distilled into one reference, organised chapter by chapter, for fast revision.</p>
   <div class="mast-meta">
     <div><div class="k">Source</div><div class="v">CampusX · “LLM Evals” playlist (Hindi)</div></div>
-    <div><div class="k">Coverage</div><div class="v">11 chapters · concepts, workflows &amp; case studies</div></div>
+    <div><div class="k">Coverage</div><div class="v">12 chapters · concepts, workflows &amp; case studies</div></div>
     <div><div class="k">Format</div><div class="v">Short notes · definitions · tables · worked numbers</div></div>
   </div>
   <div class="banner">
@@ -1881,6 +1882,207 @@ evaluate(test_cases=test_cases, metrics=metrics)</div>
   <div class="takeaway">
     <div class="tk-label">Takeaway</div>
     <p>Score a retriever on contextual recall (did it fetch what the ideal answer needs?) and contextual precision (is the useful context ranked on top?), using a golden set of questions and ideal answers that survives re-chunking. Then change one setting at a time and let the numbers decide.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 12                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch12">
+  <header class="ch-head">
+    <div class="ch-num">12</div>
+    <div class="ch-kick"><b>RAG evals · generator &amp; pipeline</b></div>
+    <h2>Testing the Generator and the Pipeline: The RAG Triad</h2>
+    <p class="ch-lede">Score the generator alone on faithfulness and answer relevancy, then wire it to the retriever and score all three legs of the RAG triad.</p>
+  </header>
+
+  <h3 id="s12-1"><a class="h3-num" href="#s12-1">12.1</a>Two failure modes, two metrics</h3>
+  <p>The <b>generator</b> is one function: <span class="mono">generate(question, context) → answer</span>. Here it is GPT-4o-mini at temperature 0, with a prompt that says “answer only from the context”.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>“Does the AI engineering program include live classes?” · context lists recorded lessons, coding assignments, projects, weekly doubt sessions</caption>
+    <thead><tr><th>Failure mode</th><th>Example answer</th><th>Metric</th></tr></thead>
+    <tbody>
+      <tr><td><b>Unfaithful</b> — adds facts the context does not contain. Air Canada (Ch 1) was this.</td><td>“Yes, two live classes every week, plus weekly doubt sessions.”</td><td><b>Faithfulness</b></td></tr>
+      <tr><td><b>Irrelevant</b> — faithful, but does not answer the question</td><td>“It includes coding assignments, projects, recorded lessons and weekly doubt sessions.”</td><td><b>Answer relevancy</b></td></tr>
+      <tr><td>Neither — the target</td><td>“The context does not confirm live classes; it mentions only recorded lessons, …”</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout warn">
+    <div class="callout-label">The line to remember</div>
+    <p><mark>Faithful does not mean correct.</mark> Given wrong context, a faithful generator gives a wrong answer built entirely from it. Relevant does not mean correct either. Correctness, completeness and citation accuracy are scored at the application level.</p>
+  </aside>
+
+  <h3 id="s12-2"><a class="h3-num" href="#s12-2">12.2</a>Faithfulness</h3>
+  <p>Golden dataset: <span class="mono">question → golden context</span>, where the golden context is every chunk in the vector store that discusses the topic. The generator is tested <b>in isolation</b>: its context comes from the dataset, not from the retriever.</p>
+  <div class="code">Faithfulness = claims supported by the context / total claims in the answer</div>
+  <ol>
+    <li>Send the question and golden context to the generator; get an answer.</li>
+    <li>The judge breaks the <b>answer</b> into claims.</li>
+    <li>For each claim, it checks whether the golden context supports it.</li>
+    <li>Score per question; average over the dataset.</li>
+  </ol>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>“What does it mean for a benchmark to get saturated?” → the answer splits into 3 claims, 2 found in the golden context → 2/3 = <b>0.67</b>.</p>
+  </aside>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Same claim-checking as contextual recall, run the other way</caption>
+    <thead><tr><th>Metric</th><th>Claims taken from</th><th>Checked against</th></tr></thead>
+    <tbody>
+      <tr><td>Contextual recall</td><td>The <b>ideal</b> answer</td><td>The <b>retrieved</b> context</td></tr>
+      <tr><td>Faithfulness</td><td>The <b>generated</b> answer</td><td>The <b>golden</b> context</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 id="s12-3"><a class="h3-num" href="#s12-3">12.3</a>Answer relevancy</h3>
+  <div class="code">Answer Relevancy = statements relevant to the question / total statements in the answer</div>
+  <ol>
+    <li>The judge breaks the answer into statements.</li>
+    <li>For each one: does it help answer the question, yes or no?</li>
+  </ol>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>Same question. Answer: “Scores cluster high and close together · so the benchmark can no longer tell models apart · separately, contamination is test data leaking into training data.” The third statement is off-topic → 2/3 = <b>0.67</b>.</p>
+  </aside>
+  <p><b>Reference-free:</b> nothing in the dataset is treated as the right answer. The dataset only supplies questions and context to generate answers from.</p>
+  <p class="small"><b>Can the judge be wrong?</b> Yes, but the same judge errs the same way on every run (a bad pitch is bad for both teams), so runs stay comparable. To cut errors, use the strongest judge you can afford: an eval touches only a few dozen rows, so the cost is small.</p>
+
+  <h3 id="s12-4"><a class="h3-num" href="#s12-4">12.4</a>Generator eval in DeepEval</h3>
+  <p class="small"><b>Golden set used:</b> all 862 chunks exported from Chroma to JSON and given to Claude, asking for one question + golden context pair at a time; each pair checked by hand → 15 rows.</p>
+  <div class="code">from deepeval import evaluate
+from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric
+from deepeval.test_case import LLMTestCase
+from src.generator import generate
+
+test_cases = []
+for row in goldens:                                    # question + golden context
+    answer = generate(row["question"], row["context"])  # generator only, no retriever
+    test_cases.append(LLMTestCase(
+        input=row["question"],
+        actual_output=answer,
+        retrieval_context=row["context"],            # the context it was given
+    ))
+
+metrics = [
+    FaithfulnessMetric(threshold=0.7, model="gpt-4o-mini", include_reason=True),
+    AnswerRelevancyMetric(threshold=0.7, model="gpt-4o-mini", include_reason=True),
+]
+evaluate(test_cases=test_cases, metrics=metrics)      # test cases run in parallel</div>
+
+  <h3 id="s12-5"><a class="h3-num" href="#s12-5">12.5</a>Improving the generator</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>15 goldens · golden context · judge GPT-4o-mini</caption>
+    <thead><tr><th>Run</th><th>Faithfulness</th><th>Answer relevancy</th></tr></thead>
+    <tbody>
+      <tr><td>Simple prompt</td><td>0.91</td><td>0.73</td></tr>
+      <tr><td>Refined prompt, after 3–4 iterations</td><td><b>0.96</b></td><td><b>0.92</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <ul>
+    <li><b>Faithfulness is the easy one.</b> Modern LLMs follow instructions well: told to answer from the context, they mostly do. Answer relevancy is where the work is.</li>
+    <li><b>Only two levers</b>, against the retriever’s four: a <b>stronger model</b> with better instruction following, and the <b>system prompt</b>.</li>
+    <li><b>Prompt loop:</b> run → read the failed cases and their reasons → give them to an LLM to suggest prompt fixes → re-run.</li>
+  </ul>
+  <div class="code">Base prompt
+  Answer only from the context; add no outside knowledge.
+  If the context is not enough, say: "I don't have enough information
+    in the course material to answer that."
+  Keep the answer clear and concise.
+
+Rules added from failed cases
+  Do not strengthen or overstate claims: if the context says two things differ,
+    do not upgrade that into "separate methods" or stronger wording.
+  The context is an informal lecture transcript: synthesize and rephrase;
+    do not require the question's exact wording to appear in it.</div>
+  <aside class="callout warn">
+    <div class="callout-label">Watch for</div>
+    <p>Tune the prompt too closely to 15 golden rows and it <b>overfits</b>. The pipeline eval, on real retrieved context, is the check.</p>
+  </aside>
+
+  <h3 id="s12-6"><a class="h3-num" href="#s12-6">12.6</a>The pipeline and contextual relevancy</h3>
+  <p><span class="mono">rag_pipeline.py</span> is glue code: retriever (with re-ranker) → join the chunks into one string → <span class="mono">generate(question, context)</span>. Evaluating it means scoring the <b>RAG triad</b>.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>What changes in the test case</caption>
+    <thead><tr><th>Field</th><th>Generator alone</th><th>Pipeline</th></tr></thead>
+    <tbody>
+      <tr><td><span class="mono">input</span></td><td>Golden question</td><td>Golden question</td></tr>
+      <tr><td><span class="mono">retrieval_context</span></td><td>Golden context, hand-fed</td><td><b>Chunks the retriever fetched</b></td></tr>
+      <tr><td><span class="mono">actual_output</span></td><td>Generator’s answer</td><td>Pipeline’s answer</td></tr>
+      <tr><td>Metrics</td><td>Faithfulness · answer relevancy</td><td>Same two + <b>contextual relevancy</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Faithfulness and answer relevancy are computed exactly as before. Only the context changed, so the scores will differ.</p>
+  <div class="code">Contextual Relevancy = statements relevant to the question / total statements in the retrieved context</div>
+  <ol>
+    <li>The retriever returns K chunks for the question.</li>
+    <li>The judge breaks <b>every chunk</b> into statements.</li>
+    <li>For each statement: is it relevant to the question?</li>
+  </ol>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>K = 5 chunks → 15 statements, 10 relevant → 10/15 = <b>0.67</b>. Also reference-free: the dataset supplies only the questions.</p>
+  </aside>
+
+  <h3 id="s12-7"><a class="h3-num" href="#s12-7">12.7</a>Precision high, contextual relevancy low</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Same 15 questions, end to end</caption>
+    <thead><tr><th>Metric</th><th>Score</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr><td>Faithfulness</td><td>0.93</td><td>Holds on real context</td></tr>
+      <tr><td>Answer relevancy</td><td>0.86</td><td>Barely moved from 0.92, so the prompt was not overfit</td></tr>
+      <tr><td>Contextual relevancy</td><td><b>0.42</b></td><td>Low: the retriever is the culprit</td></tr>
+      <tr><td>Recall · precision <span class="small">(retriever alone, re-run)</span></td><td>0.99 · 0.89</td><td>Both high</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Precision 0.89 and contextual relevancy 0.42 do not contradict each other. The metrics judge at different grain:</p>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Metric</th><th>Judges</th><th>Catches</th></tr></thead>
+    <tbody>
+      <tr><td>Recall</td><td>Was the needed information fetched?</td><td>Missing context</td></tr>
+      <tr><td>Precision</td><td>Each <b>chunk</b>: useful or not?</td><td>Junk chunks among the K</td></tr>
+      <tr><td>Contextual relevancy</td><td>Each <b>statement</b> inside the chunks</td><td><mark>Noise inside a useful chunk</mark></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>A chunk of 5 sentences, 2 of them useful. Precision counts the whole chunk as relevant (1); contextual relevancy scores it 2/5.</p>
+  </aside>
+  <ul>
+    <li><b>Fix:</b> smaller chunks and less overlap mean less noise per chunk. Re-run all five metrics, because the other four may drop in trade-off.</li>
+    <li><b>Or accept it:</b> if faithfulness, answer relevancy, recall and precision are all good, the answers are already good, and a low contextual relevancy can be tolerated.</li>
+  </ul>
+
+  <h3 id="s12-8"><a class="h3-num" href="#s12-8">12.8</a>The five core RAG metrics</h3>
+  <div class="tbl-wrap">
+  <table>
+    <caption>DeepEval’s RAG set: component and pipeline levels are now covered</caption>
+    <thead><tr><th>Metric</th><th>Tests</th><th>Judge compares</th><th>Needs ideal answer?</th></tr></thead>
+    <tbody>
+      <tr><td>Contextual recall</td><td>Retriever</td><td>Ideal answer’s claims ↔ retrieved chunks</td><td>Yes</td></tr>
+      <tr><td>Contextual precision</td><td>Retriever</td><td>Each chunk ↔ question + ideal answer, rank-aware</td><td>Yes</td></tr>
+      <tr><td>Contextual relevancy</td><td>Retriever, inside the pipeline</td><td>Statements in the chunks ↔ question</td><td>No</td></tr>
+      <tr><td>Faithfulness</td><td>Generator</td><td>Answer’s claims ↔ the context it was given</td><td>No</td></tr>
+      <tr><td>Answer relevancy</td><td>Generator</td><td>Answer’s statements ↔ question</td><td>No</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="small">Anything beyond these five, such as correctness, completeness or style, is a <b>custom metric</b> (G-Eval), scored at the application level.</p>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>Score the generator in isolation on faithfulness (no invented claims) and answer relevancy (no off-topic claims), and improve it through the model and the system prompt. Then score the wired pipeline on the RAG triad, where contextual relevancy catches the noise inside chunks that precision misses.</p>
   </div>
 </section>
 

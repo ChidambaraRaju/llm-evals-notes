@@ -17,6 +17,7 @@ The notes are a single self-contained HTML page — no build step, no dependenci
 9. Leaderboards and Custom Evals: Choosing the Model
 10. How Do You Evaluate a RAG App? The Full Framework
 11. Testing the Retriever: Contextual Recall and Precision
+12. Testing the Generator and the Pipeline: The RAG Triad
 
 ## How to view
 
