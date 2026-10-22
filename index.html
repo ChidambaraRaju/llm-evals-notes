@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Evaluations — Revision Notes · CampusX Series</title>
-<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Twelve chapters so far.">
+<meta name="description" content="Chapter-by-chapter revision notes compiled from the CampusX lecture series on LLM Evaluations. Thirteen chapters so far.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,300..700;1,7..72,300..700&display=swap" rel="stylesheet">
@@ -426,10 +426,11 @@ svg .lnacc{stroke:var(--accent);fill:none}
     <li><a href="#ch10"><span class="toc-num">10</span>Evaluating a RAG App: The Framework</a></li>
     <li><a href="#ch11"><span class="toc-num">11</span>Testing the Retriever</a></li>
     <li><a href="#ch12"><span class="toc-num">12</span>Testing the Generator &amp; the RAG Triad</a></li>
+    <li><a href="#ch13"><span class="toc-num">13</span>G-Eval: Correctness, Completeness &amp; Style</a></li>
   </ol>
   <div class="sidebar-foot">
     Series in progress —<br>
-    <b>12</b> chapters covered so far.<br>
+    <b>13</b> chapters covered so far.<br>
     New lectures → new chapters.
     <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
   </div>
@@ -443,7 +444,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
   <p class="lede">Everything the series has taught so far about testing large language models and the applications built on top of them — distilled into one reference, organised chapter by chapter, for fast revision.</p>
   <div class="mast-meta">
     <div><div class="k">Source</div><div class="v">CampusX · “LLM Evals” playlist (Hindi)</div></div>
-    <div><div class="k">Coverage</div><div class="v">12 chapters · concepts, workflows &amp; case studies</div></div>
+    <div><div class="k">Coverage</div><div class="v">13 chapters · concepts, workflows &amp; case studies</div></div>
     <div><div class="k">Format</div><div class="v">Short notes · definitions · tables · worked numbers</div></div>
   </div>
   <div class="banner">
@@ -2083,6 +2084,148 @@ Rules added from failed cases
   <div class="takeaway">
     <div class="tk-label">Takeaway</div>
     <p>Score the generator in isolation on faithfulness (no invented claims) and answer relevancy (no off-topic claims), and improve it through the model and the system prompt. Then score the wired pipeline on the RAG triad, where contextual relevancy catches the noise inside chunks that precision misses.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 13                                                   -->
+<!-- ============================================================ -->
+<section class="chapter" id="ch13">
+  <header class="ch-head">
+    <div class="ch-num">13</div>
+    <div class="ch-kick"><b>RAG evals · application quality</b></div>
+    <h2>G-Eval: Correctness, Completeness and Style</h2>
+    <p class="ch-lede">Some qualities cannot be counted, only judged. G-Eval makes an LLM judge stable enough to score them.</p>
+  </header>
+
+  <h3 id="s13-1"><a class="h3-num" href="#s13-1">13.1</a>Count-based vs judgment-based metrics</h3>
+  <p>The five RAG metrics so far are <b>count-based</b>: an LLM splits text into claims, checks each one, and a formula turns the count into a ratio (faithfulness: 3 of 4 claims in context → 0.75).</p>
+  <p>Some qualities only exist at the level of the <b>whole answer</b>, so splitting into claims breaks them. They need <b>judgment</b>.</p>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Metric</th><th>Why counting fails</th></tr></thead>
+    <tbody>
+      <tr><td>Style</td><td>A “why → what → how” explanation is a property of the whole answer. No single sentence has it.</td></tr>
+      <tr><td>Correctness</td><td>An analogy, checked alone against the golden answer, looks unrelated and is marked as a false claim.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Other judgment-based metrics: completeness, helpfulness, coherence, tonality and all <b>safety</b> metrics.</p>
+
+  <h3 id="s13-2"><a class="h3-num" href="#s13-2">13.2</a>Plain LLM-as-a-judge and its flaw</h3>
+  <div class="code">Compare the actual answer against the expected answer and decide how
+factually correct it is. Give a score from 0 to 10.
+Question: {q}   Expected answer: {ideal}   Actual answer: {generated}</div>
+  <p>Run this for each of the 15 goldens and average. It works in theory, but the score has <b>high variance</b>: the same inputs give 0.60 on one run and 0.75 on the next. There are two causes.</p>
+  <ol>
+    <li><b>Loose criterion.</b> One line does not define correctness, so each independent call may judge it from a different angle.</li>
+    <li><b>One sampled integer.</b> The judge may give “8” 51% and “7” 40%. A small shift between runs flips the printed score from 8 to 7.</li>
+  </ol>
+
+  <h3 id="s13-3"><a class="h3-num" href="#s13-3">13.3</a>G-Eval</h3>
+  <aside class="callout def">
+    <div class="callout-label">Definition · G-Eval</div>
+    <p>An LLM-as-a-judge method from a <b>2023 paper</b> (best results with GPT-4). It is still an LLM judge, with <b>two fixes</b>, one for each cause of variance.</p>
+  </aside>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Cause of variance</th><th>G-Eval fix</th></tr></thead>
+    <tbody>
+      <tr><td>Loose one-line criterion</td><td>The judge uses <b>chain of thought</b> to expand the criterion into 4–5 fixed <b>evaluation steps</b>: a rule book. A scoring <b>rubric</b> can be added on top.</td></tr>
+      <tr><td>One sampled integer</td><td><b>Probability-weighted score</b>: read the log-probabilities of the score tokens and take the weighted average.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <ol>
+    <li>You give a <b>name</b> (Correctness) and a high-level <b>criterion</b>.</li>
+    <li>The judge turns the criterion into evaluation steps with CoT.</li>
+    <li>A judge prompt is built from the steps, rubric, question, expected output and actual output.</li>
+    <li>The judge answers with a 0–10 score. Its <b>top-K token probabilities</b> are read and turned into a weighted score.</li>
+    <li>Divide by 10 and compare to the <b>threshold</b> (0.7) → pass or fail.</li>
+  </ol>
+
+  <h3 id="s13-4"><a class="h3-num" href="#s13-4">13.4</a>The probability-weighted score</h3>
+  <div class="code">score = Σ s · p(s)  /  Σ p(s)        over the numeric tokens s among the top K</div>
+  <aside class="callout">
+    <div class="callout-label">Worked number</div>
+    <p>Top 5 tokens: <span class="mono">8</span> 0.70 · <span class="mono">7</span> 0.20 · <span class="mono">9</span> 0.05 · <span class="mono">the</span> 0.01 · <span class="mono">:</span>. Drop the non-numeric tokens. The rest sum to 0.95; normalise → 0.737 · 0.211 · 0.053.<br>
+    8 × 0.737 + 7 × 0.211 + 9 × 0.053 = <b>7.84</b> → 0.784 ≥ 0.7 → <b>pass</b>.</p>
+  </aside>
+  <p>Greedy decoding would print <b>8</b>, and on the next run it might print 7. The weighted score moves only slightly, for example 7.84 → 7.9, because it already accounts for how sure the judge was about 7, 8 and 9.</p>
+
+  <h3 id="s13-5"><a class="h3-num" href="#s13-5">13.5</a>G-Eval in DeepEval</h3>
+  <p>DeepEval has no built-in correctness metric, so you define one with <span class="mono">GEval</span>:</p>
+  <div class="code">from deepeval.metrics import GEval
+from deepeval.metrics.g_eval import Rubric
+from deepeval.test_case import LLMTestCaseParams as P
+
+correctness = GEval(
+    name="Correctness",
+    evaluation_steps=[
+        "Compare only the factual claims in the actual output against the expected output.",
+        "A claim is wrong only if it CONTRADICTS the expected output or is factually false.",
+        "A factually accurate answer must score at least 0.9 even if it is shorter.",
+        "Do NOT deduct for brevity or omitted points.",
+    ],
+    rubric=[
+        Rubric(score_range=(9, 10), expected_outcome="All claims correct. Brevity is fine."),
+        Rubric(score_range=(5, 8),  expected_outcome="Mostly correct, one minor inaccuracy."),
+        Rubric(score_range=(0, 4),  expected_outcome="A clear factual error or contradiction."),
+    ],
+    evaluation_params=[P.INPUT, P.ACTUAL_OUTPUT, P.EXPECTED_OUTPUT],
+    threshold=0.7, model="gpt-4o-mini",
+    strict_mode=False,                       # keep the probability-weighted score
+)
+evaluate(test_cases=test_cases, metrics=[correctness, completeness, style])</div>
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Parameter</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><span class="mono">criteria</span></td><td>High-level text; G-Eval generates the steps with CoT. The steps can vary slightly between calls.</td></tr>
+      <tr><td><span class="mono">evaluation_steps</span></td><td>Your own steps. The CoT step is skipped, and the judge gets the same rule book every call.</td></tr>
+      <tr><td><span class="mono">rubric</span></td><td>Score bands. Without one, the judge decides what each score means.</td></tr>
+      <tr><td><span class="mono">evaluation_params</span></td><td>Test-case fields the judge sees. Leave out <span class="mono">EXPECTED_OUTPUT</span> → reference-free.</td></tr>
+      <tr><td><span class="mono">strict_mode</span></td><td><span class="mono">False</span>: weighted score. <span class="mono">True</span>: no weighting, strict 0/1 score.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <aside class="callout warn">
+    <div class="callout-label">The line to remember</div>
+    <p><b>Criteria first, steps later.</b> At the start, give a criterion and let the LLM write the steps. Once a few runs show where it fails, <mark>write your own evaluation steps and rubric</mark>: more control means more deterministic scores.</p>
+  </aside>
+
+  <h3 id="s13-6"><a class="h3-num" href="#s13-6">13.6</a>Case study: quality of the doubt solver</h3>
+  <p><b>Golden set:</b> 15 rows of <span class="mono">question → ideal answer (+ session)</span>, written by a human expert. The ideal answer is what is <b>true in the world</b>, not what the lecture said.</p>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Correctness ≠ faithfulness</caption>
+    <thead><tr><th></th><th>Faithful (from context)</th><th>Unfaithful</th></tr></thead>
+    <tbody>
+      <tr><td><b>Correct</b></td><td>The target</td><td>Lecture was wrong; the generator used its training knowledge</td></tr>
+      <tr><td><b>Incorrect</b></td><td>Lecture taught it wrong; the generator repeated it</td><td>Hallucinated, and false</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="tbl-wrap">
+  <table>
+    <caption>Pipeline: retrieve → re-rank → generate · judge GPT-4o-mini · threshold 0.7</caption>
+    <thead><tr><th>Metric</th><th>Judges</th><th>Before</th><th>Cause, from the judge’s reasons</th><th>Fix</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td><b>Correctness</b><br><span class="small">reference-based</span></td><td>Truth only</td><td>0.66<br><span class="small">8/15 pass</span></td><td>Penalised answers that were correct but shorter than the thorough ideal answer</td><td><b>Eval</b>: steps “brevity is not an error” + rubric</td><td><b>0.84</b><br><span class="small">14/15; re-run 0.83, same case fails</span></td></tr>
+      <tr><td><b>Completeness</b><br><span class="small">reference-based</span></td><td>Coverage of the ideal answer’s key points (A, B, C; answer covers A, B → ~7.5/10)</td><td>0.68<br><span class="small">5/15</span></td><td>Generator prompt asked for concise answers</td><td><b>App</b>: “identify every distinct part of the question and cover each”, still only from context</td><td><b>0.75</b><br><span class="small">14/15</span></td></tr>
+      <tr><td><b>Style</b><br><span class="small">reference-free</span></td><td>CampusX teaching voice: intuition before jargon, conversational prose</td><td>0.54</td><td>Generator never told the style; judge also wanted an analogy in every answer</td><td><b>Both</b>: style rules in the generator prompt; steps say “an analogy is a bonus, not required”</td><td><b>0.74</b><br><span class="small">9/15</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <ul>
+    <li><b>Loop:</b> run → read the reasons for failed cases → find the common pattern → decide if the <b>eval</b> or the <b>app</b> is wrong → fix → re-run.</li>
+    <li><b>Prompt engineering matters:</b> the completeness and style gains came from changing the generator’s system prompt.</li>
+    <li><b>Don’t max out style.</b> Pushing it too far makes faithfulness and other metrics drop. For a soft metric like style, a 0.6 threshold is fine.</li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="tk-label">Takeaway</div>
+    <p>G-Eval is LLM-as-a-judge with two fixes: chain-of-thought evaluation steps (plus a rubric) instead of a loose criterion, and a probability-weighted score instead of one sampled integer. Together they make judgment-based metrics such as correctness, completeness and style stable from run to run.</p>
   </div>
 </section>
 
