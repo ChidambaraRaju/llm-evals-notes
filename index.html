@@ -848,7 +848,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
       <tr><td>Handles nuance</td><td>No — exactly checkable outputs only</td><td>Yes</td><td>Yes, best of all</td></tr>
       <tr><td>Cost at scale</td><td>Negligible</td><td>A fraction of human cost</td><td>High, paid per item</td></tr>
       <tr><td>Trust</td><td>Total, for what it can check</td><td>Only after verifying against humans</td><td>Highest</td></tr>
-      <tr><td>Example here</td><td>Retriever → Recall@K</td><td>UPSC answer grader → MAE</td><td>Chatbot helpfulness → 1–5 rubric</td></tr>
+      <tr><td>Example here</td><td>Retriever → Recall@K</td><td>UPSC answer grader, checked against human marks with MAE</td><td>Chatbot helpfulness → 1–5 rubric</td></tr>
     </tbody>
   </table>
   </div>
@@ -1008,7 +1008,7 @@ svg .lnacc{stroke:var(--accent);fill:none}
     </tbody>
   </table>
   </div>
-  <p class="small"><b>Regression example:</b> adding “be very polite” to fix cold refund answers made the bot soften a ₹19,500 price to “around ₹19,000”. A score going from 92 to 99 is only good if nothing else fell.</p>
+  <p class="small"><b>Regression example:</b> adding “be very polite” to fix cold refund answers made the bot soften a ₹19,500 price to “around ₹19,000”. The rule: one metric rising (say 92 → 99) is only good news if no other metric fell.</p>
 
   <h3 id="s6-2"><a class="h3-num" href="#s6-2">6.2</a>Why production still surprises you</h3>
   <ul>
@@ -1458,7 +1458,7 @@ monthly_cost   = cost_per_query × queries_per_day × 30 × (USD → INR)</div>
   <ul>
     <li>Output tokens are always priced higher than input tokens.</li>
     <li><b>Blended price:</b> one figure at a stated input : output ratio. At 4 : 1 → (4 × 10 + 1 × 50) ÷ 5 = <b>$18</b>. Always check the ratio — it differs between leaderboards.</li>
-    <li>Shortcut for this workload: monthly ₹ ≈ blended price × 71,250, so a ₹3 lakh ceiling means a blended price ≤ ~$4.2.</li>
+    <li>Shortcut for this workload: monthly ₹ ≈ blended price × 71,250 (500 tokens × 50,000 queries × 30 days × ₹95 ÷ 1M), so a ₹3 lakh ceiling means a blended price ≤ ~$4.2.</li>
   </ul>
 
   <h3 id="s9-6"><a class="h3-num" href="#s9-6">9.6</a>Prompt caching</h3>
@@ -1479,7 +1479,7 @@ monthly_cost   = cost_per_query × queries_per_day × 30 × (USD → INR)</div>
   </div>
   <ul>
     <li><b>High traffic → 5-minute cache</b> (something always arrives in time). <b>Low traffic → 1-hour cache.</b></li>
-    <li>Here the system text + schema (~350 of 400 tokens) repeat on every call: input cost falls ~90%, the bill drops to roughly ₹7–8 lakh — still over budget.</li>
+    <li>Here the system text + schema (~350 of 400 tokens) repeat on every call. Per query: 350 × $1 ⁄ 1M + 50 × $10 ⁄ 1M + output $0.005 = <b>$0.00585</b> (was $0.009) → about <b>₹8.3 lakh</b> a month, still over budget. Output tokens are never cached, so they now dominate the bill.</li>
     <li>Helps only when a large prefix <b>repeats</b>. In RAG most of the prompt is retrieved context that changes per query.</li>
     <li>Under the hood: <b>KV caching</b> of the attention keys and values.</li>
   </ul>
@@ -1604,8 +1604,8 @@ score   = 0.9 × norm(coding_rating) + 0.1 × norm(output_speed)</div>
     <tbody>
       <tr><td>Question asked</td><td>Given a query, does it fetch the right chunks?</td><td>Given a question and context, is the answer good?</td></tr>
       <tr><td>Metrics</td><td><b>Recall</b> — of all the right documents, how many did I fetch?<br><b>Precision</b> — of those I fetched, how many were useful?</td><td><b>Faithfulness</b> — answer comes only from the given context, no hallucination<br><b>Answer relevance</b> — answer addresses the question<br><b>Citation accuracy</b> — the cited source is the right one</td></tr>
-      <tr><td>Input</td><td>Queries with golden relevant-document labels</td><td><b>Hand-fed</b> question + golden context — not connected to the retriever</td></tr>
-      <tr><td>Method</td><td>Reference-based · programmatic</td><td>Reference-free · LLM judge</td></tr>
+      <tr><td>Input</td><td>Queries with golden labels: relevant chunk IDs, or ideal answers (Ch 11)</td><td><b>Hand-fed</b> question + golden context — not connected to the retriever</td></tr>
+      <tr><td>Method</td><td>Reference-based · programmatic on chunk IDs, or an LLM judge on ideal answers</td><td>Reference-free · LLM judge</td></tr>
     </tbody>
   </table>
   </div>
@@ -1624,7 +1624,7 @@ score   = 0.9 × norm(coding_rating) + 0.1 × norm(output_speed)</div>
     </tbody>
   </table>
   </div>
-  <p class="small">Faithfulness and answer relevance repeat from level 1, but now on the <b>real retrieved context</b>, end to end.</p>
+  <p class="small">Faithfulness and answer relevance repeat from level 1, but now on the <b>real retrieved context</b>, end to end. DeepEval names: contextual relevancy, faithfulness, answer relevancy.</p>
 
   <h3 id="s10-4"><a class="h3-num" href="#s10-4">10.4</a>Level 3 — the application</h3>
   <div class="tbl-wrap">
@@ -1633,7 +1633,7 @@ score   = 0.9 × norm(coding_rating) + 0.1 × norm(output_speed)</div>
     <tbody>
       <tr><td rowspan="3">Quality</td><td><b>Correctness</b></td><td>Is the answer right, against the golden answer?</td></tr>
       <tr><td><b>Completeness</b></td><td>Does it cover every part of the question? A two-part question with one part answered correctly is correct but <b>not complete</b>.</td></tr>
-      <tr><td><b>Style</b></td><td>Does it explain the way the product should (here, like a CampusX teacher)? Scored with a tone rubric, e.g. G-Eval.</td></tr>
+      <tr><td><b>Style</b></td><td>Does it explain the way the product should (here, like a CampusX teacher)? Scored by an LLM judge against a tone rubric (G-Eval, Ch 13).</td></tr>
       <tr><td>Safety</td><td>Toxicity · PII leakage · jailbreak</td><td>Can the app be made to say or leak something it should not?</td></tr>
       <tr><td>Ops</td><td>Latency · cost per query · tokens</td><td>Is it fast and cheap enough to run?</td></tr>
     </tbody>
@@ -1735,8 +1735,8 @@ score   = 0.9 × norm(coding_rating) + 0.1 × norm(output_speed)</div>
   <table>
     <thead><tr><th>Failure mode</th><th>Example <span class="small">(needed: chunks 1, 15, 13)</span></th><th>Metric</th></tr></thead>
     <tbody>
-      <tr><td><b>Miss</b> — the right context is not fetched</td><td>Returns 27, 28, 29</td><td><b>Recall</b> = relevant fetched ÷ all relevant that exist</td></tr>
-      <tr><td><b>Noise</b> — right context arrives with junk</td><td>Returns 1, 15, 27, 28, 29</td><td><b>Precision</b> = relevant fetched ÷ all fetched</td></tr>
+      <tr><td><b>Miss</b> — the right context is not fetched</td><td>Returns 27, 28, 29 → recall 0/3 = <b>0</b></td><td><b>Recall</b> = relevant fetched ÷ all relevant that exist</td></tr>
+      <tr><td><b>Noise</b> — right context arrives with junk</td><td>Returns 1, 15, 27, 28, 29 → precision 2/5 = <b>0.4</b> (recall 2/3)</td><td><b>Precision</b> = relevant fetched ÷ all fetched</td></tr>
     </tbody>
   </table>
   </div>
@@ -1766,7 +1766,7 @@ score   = 0.9 × norm(coding_rating) + 0.1 × norm(output_speed)</div>
   </aside>
 
   <h3 id="s11-4"><a class="h3-num" href="#s11-4">11.4</a>Contextual recall</h3>
-  <div class="code">Contextual Recall = attributable statements / total statements in the ideal answer</div>
+  <div class="code">Contextual Recall = statements supported by the retrieved chunks / total statements in the ideal answer</div>
   <ol>
     <li>The judge breaks the <b>ideal answer</b> into claims.</li>
     <li>For each claim, it checks whether <b>any retrieved chunk</b> supports it.</li>
@@ -1782,7 +1782,8 @@ score   = 0.9 × norm(coding_rating) + 0.1 × norm(output_speed)</div>
   <p>The judge sees the question, the ideal answer and <b>one chunk at a time</b>, and answers: does this chunk help produce that answer — yes or no, with a reason. Plain precision would then be yes ÷ K, but that ignores order.</p>
   <div class="code">Contextual Precision = (1 / R) × Σ<sub>k=1..n</sub> (relevant in top k / k) × r<sub>k</sub>
 
-R   = number of relevant chunks
+n   = number of chunks retrieved (K)
+R   = number of relevant chunks among them
 r<sub>k</sub> = 1 if the chunk at rank k is relevant, else 0</div>
   <div class="tbl-wrap">
   <table>
@@ -1906,7 +1907,7 @@ evaluate(test_cases=test_cases, metrics=metrics)</div>
     <tbody>
       <tr><td><b>Unfaithful</b> — adds facts the context does not contain. Air Canada (Ch 1) was this.</td><td>“Yes, two live classes every week, plus weekly doubt sessions.”</td><td><b>Faithfulness</b></td></tr>
       <tr><td><b>Irrelevant</b> — faithful, but does not answer the question</td><td>“It includes coding assignments, projects, recorded lessons and weekly doubt sessions.”</td><td><b>Answer relevancy</b></td></tr>
-      <tr><td>Neither — the target</td><td>“The context does not confirm live classes; it mentions only recorded lessons, …”</td><td>—</td></tr>
+      <tr><td>Faithful and relevant — the target</td><td>“The context does not confirm live classes; it mentions only recorded lessons, …”</td><td>—</td></tr>
     </tbody>
   </table>
   </div>
@@ -2119,7 +2120,7 @@ Question: {q}   Expected answer: {ideal}   Actual answer: {generated}</div>
   <p>Run this for each of the 15 goldens and average. It works in theory, but the score has <b>high variance</b>: the same inputs give 0.60 on one run and 0.75 on the next. There are two causes.</p>
   <ol>
     <li><b>Loose criterion.</b> One line does not define correctness, so each independent call may judge it from a different angle.</li>
-    <li><b>One sampled integer.</b> The judge may give “8” 51% and “7” 40%. A small shift between runs flips the printed score from 8 to 7.</li>
+    <li><b>One sampled integer.</b> The judge may put 51% probability on the token “8” and 40% on “7”. A small shift between runs flips the printed score from 8 to 7.</li>
   </ol>
 
   <h3 id="s13-3"><a class="h3-num" href="#s13-3">13.3</a>G-Eval</h3>
@@ -2148,7 +2149,7 @@ Question: {q}   Expected answer: {ideal}   Actual answer: {generated}</div>
   <div class="code">score = Σ s · p(s)  /  Σ p(s)        over the numeric tokens s among the top K</div>
   <aside class="callout">
     <div class="callout-label">Worked number</div>
-    <p>Top 5 tokens: <span class="mono">8</span> 0.70 · <span class="mono">7</span> 0.20 · <span class="mono">9</span> 0.05 · <span class="mono">the</span> 0.01 · <span class="mono">:</span>. Drop the non-numeric tokens. The rest sum to 0.95; normalise → 0.737 · 0.211 · 0.053.<br>
+    <p>Top 5 tokens: <span class="mono">8</span> 0.70 · <span class="mono">7</span> 0.20 · <span class="mono">9</span> 0.05 · <span class="mono">the</span> 0.01 · <span class="mono">:</span> (tiny). Drop the non-numeric tokens. The rest sum to 0.95; normalise → 0.737 · 0.211 · 0.053.<br>
     8 × 0.737 + 7 × 0.211 + 9 × 0.053 = <b>7.84</b> → 0.784 ≥ 0.7 → <b>pass</b>.</p>
   </aside>
   <p>Greedy decoding would print <b>8</b>, and on the next run it might print 7. The weighted score moves only slightly, for example 7.84 → 7.9, because it already accounts for how sure the judge was about 7, 8 and 9.</p>
@@ -2176,6 +2177,7 @@ correctness = GEval(
     threshold=0.7, model="gpt-4o-mini",
     strict_mode=False,                       # keep the probability-weighted score
 )
+# completeness and style are built the same way; style drops EXPECTED_OUTPUT
 evaluate(test_cases=test_cases, metrics=[correctness, completeness, style])</div>
   <div class="tbl-wrap">
   <table>
