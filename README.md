@@ -19,6 +19,8 @@ The notes are a single self-contained HTML page — no build step, no dependenci
 11. Testing the Retriever: Contextual Recall and Precision
 12. Testing the Generator and the Pipeline: The RAG Triad
 13. G-Eval: Correctness, Completeness and Style
+14. Safety Evals: Toxicity, Leakage and Scope Drift
+15. Operational Evals: Latency, Cost and Reliability
 
 ## How to view
 
