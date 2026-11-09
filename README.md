@@ -1,6 +1,6 @@
 # LLM Evals Notes
 
-Revision notes on evaluating large language models and LLM applications, written while following the CampusX lecture series on LLM Evaluations. The series is ongoing; a new chapter is added as more of it is covered.
+Revision notes on evaluating large language models and LLM applications, written while following the CampusX lecture series on LLM Evaluations. The series is complete; all fifteen lectures are covered.
 
 The notes are a single self-contained HTML page — no build step, no dependencies.
 
